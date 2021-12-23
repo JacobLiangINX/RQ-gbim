@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+  <head>
+  <title>{% block title %}{% endblock %}</title>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="description" content="">
+<meta name="author" content=""> 
+<link rel="icon" href="../static/img/IDD_favicon.png">
+<script src="../static/js/3.1.1/jquery.js"></script>
+<!--script src="../static/js/userTrack.js"></script-->
+<script src="../static/js/bootstrap.min.js"></script>  
+<link href="../static/css/bootstrap.min.css" rel="stylesheet">  
+
+<link rel="stylesheet" href="../static/css/lightbox.min.css"> 
+<script src="../static/js/lightbox-plus-jquery.min.js"></script>
+
+<!--script src="../static/js/venders/index.js"></script>
+<!--script src="../static/js/venders/xy.js"></script>
+<script src="../static/js/venders/Animated.js"></script-->
+
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+ 
+<script src="https://cdn.amcharts.com/lib/5/percent.js"></script> 
+
+
+<script src="../static/js/main.js"></script>
+
+<style>
+#chartdiv {
+  width: 100%;
+  height: 500px;
+}
+</style>
+
+<style> 
+ body {
+  line-height:1.2
+}
+
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+  </head>
+  <body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" style="padding: .0rem 1rem;">
+      <div class="container">
+        <a class="navbar-brand" href="/gbim">
+		  <font color="#FFD700">售後服務備品庫存預測</font>
+		</a> 			
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav">
+		    <li class="nav-item dropdown" style="">
+			  <a class="nav-link dropdown-toggle active" href="#" id="page_router" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{data['page_router']}}</a>
+			  <div class="dropdown-menu shadow border-0 " aria-labelledby="page_router">		  
+			    <span class="dropdown-item" onclick="page_router(1)">SMART FR 決策輔助</span> 
+				<span class="dropdown-item" onclick="page_router(2)">全球不良品區域預測</span>
+				<span class="dropdown-item" onclick="page_router(3)">全球備品庫存推薦</span>
+				<span class="dropdown-item" onclick="page_router(4)">維修中心庫存安全量</span>
+				<span class="dropdown-item" onclick="page_router(5)">檢核機制</span>
+				<span class="dropdown-item" onclick="page_router(6)">管理者功能</span>
+              </div>
+            </li>
+			
+			
+		   <span class="nav-link active" role="button" style="margin-left:320px; "> {{ session['userChineseName'] }} 您好<a href="/gbim/logout" style="margin-left:30px;text-decoration: none;">登出</a></span>		   
+		     <!--div class="element">			  
+				<img src="../static/img/helpdesk-icon.png" style="width:34px; margin-left:30px;" class="rounded-circle user_img_msg" id="idea">			  
+			  <span class="info">方珮珊(Susan Fang)<br>514-17909</span>
+			 </div-->
+			 <div class="element">
+			  <a class="example-image-link" href="../static/img/20211006.jpg" data-lightbox="example-1" data-title="">
+				<img src="../static/img/idea-icon.png" style="width:34px;cursor: pointer;margin-left:80px;" class="rounded-circle user_img_msg" id="idea">
+			  </a>				
+			  <span class="info">使用說明</span>
+			 </div>			 
+          </ul>
+        </div>
+      </div>
+    </nav>
+  
+    <div class="container" id="main-content" style="margin-top:50px; height:490px;">
+	 {% block content %}{% endblock %}
+    </div> 
+	 
+	<div class="container" style=" ">
+		<div class="row" style=" float: right;  ">
+			<div class="input-group">
+			  <div class="input-group-prepend">
+				<span class="input-group-text" id="">聯絡窗口</span>
+			  </div>
+			   <div class="input-group-prepend">
+				<span class="input-group-text" id="">方珮珊(Susan Fang)  514-17909</span>&nbsp;&nbsp;&nbsp;&nbsp;
+			  </div><!--button type="button" class="btn btn-secondary">使用說明</button-->	
+			</div>		  
+		</div>
+	</div>	
+  </body>
+  
+</html>

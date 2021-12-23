@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% block title %}GBIM{% endblock %}
+<script type="text/javascript"> 
+$(document).ready(function() {   
+	 
+});
+ 
+</script>
+ 
+ {% block content %}
+  <div class="row" style="  margin: auto;">	  
+		 <div class="card text-white bg-success mb-3" style="max-width: 18rem; margin:auto; cursor: pointer;" onclick="location.href='/gbim/smartfr';">
+		  <div class="card-header" style="font-size: 25px;">SMART FR 決策輔助</div>
+		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+			 <img class="card-img center" src="../static/img/decision.png" style="width: 60%;margin-top:-20px;" alt="Card image">
+		  </div>
+		 </div>
+		 
+		 <div class="card text-white bg-success mb-3" style="max-width: 18rem; margin: auto; cursor: pointer;" onclick="location.href='/gbim/areaforecast';">
+		  <div class="card-header" style="font-size: 25px;">全球不良品區域預測</div>
+		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+			 <img class="card-img center" src="../static/img/map.png" style="width: 60%;margin-top:-20px; " alt="Card image">
+		  </div>
+		 </div>
+		 
+		 <div class="card text-white bg-success mb-3" style="max-width: 18rem;margin: auto; cursor: pointer;" onclick="location.href='/gbim/recommend';">
+		  <div class="card-header" style="font-size: 25px;">全球備品庫存推薦</div>
+		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+			 <img class="card-img center" src="../static/img/recommend.png" style="width: 100%;margin-top:-20px;" alt="Card image">
+		  </div>
+		 </div>
+	  </div> 
+	  
+	  <div class="row" style="  margin: auto;">	 
+		 <div class="card text-white bg-success mb-3" style="max-width: 18rem;margin: auto; cursor: pointer;" onclick="location.href='/gbim/safetystock';">
+		  <div class="card-header" style="font-size: 25px;">維修中心庫存安全量</div>
+		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+			 <img class="card-img center" src="../static/img/storage.png" style="width: 65%;margin-top:-10px;" alt="Card image">
+		  </div>
+		 </div>
+		 
+		 <div class="card text-white bg-warning  mb-3 " style="max-width: 18rem;margin: auto; cursor: pointer;" onclick="location.href='/gbim/audit';">
+		  <div class="card-header" style="font-size: 25px;">檢核機制 </div>
+		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+			 <img class="card-img center" src="../static/img/check.png" style="width: 50%;" alt="Card image">
+		  </div>
+		 </div>
+		 
+		 <div class="card text-white bg-warning  mb-3" style="max-width: 18rem;margin: auto; cursor: pointer;" onclick="location.href='/gbim/admin';">
+		  <div class="card-header" style="font-size: 25px;">管理者功能</div>		  
+		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+			 <img class="card-img center" src="../static/img/dashboard.png" style="width: 90%;margin-top:-10px;" alt="Card image">
+		  </div>
+		 </div>
+      </div>
+{% endblock %}

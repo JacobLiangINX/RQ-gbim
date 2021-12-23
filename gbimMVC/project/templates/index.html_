@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html> 
+<head>
+<title>售後服務備品庫存預測</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="description" content="">
+<meta name="author" content=""> 
+<link rel="icon" href="../static/img/IDD_favicon.png">
+<script src="../static/js/3.1.1/jquery.js"></script>
+<!--script src="../static/js/userTrack.js"></script-->
+<script src="../static/js/bootstrap.min.js"></script>  
+<link href="../static/css/bootstrap.min.css" rel="stylesheet">  
+
+<link rel="stylesheet" href="../static/css/lightbox.min.css"> 
+<script src="../static/js/lightbox-plus-jquery.min.js"></script>
+
+<style> 
+ body {
+  line-height:1.2
+}
+
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+<!--script src="../static/js/userTrack.js"></script-->  
+
+<script type="text/javascript"> 
+$(document).ready(function() {  
+	//userTrackConfig.serviceKey = 222222;
+	//userTrackConfig.PERNR = {{ session['PERNR'] }}
+	//saveEventLog('index');
+	//logReloadOrCloseBrowser(); // 要記錄瀏覽器Reload Or Close
+	//$("#main-content").load('templates/home.html');
+	
+	 
+});
+ 
+</script>
+ 
+ 
+</head>
+ <body> 
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" style="padding: .0rem 1rem;">
+      <div class="container">
+        <a class="navbar-brand" href="/gbim">
+		  <font color="#FFD700">售後服務備品庫存預測</font>
+		</a> 			
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav">
+		    
+		   <span class="nav-link active" role="button" style="margin-left:550px; "> {{ session['userChineseName'] }} 您好<a href="/gbim/logout" style="margin-left:30px;text-decoration: none;">登出</a></span>		   
+		     <!--div class="element">			  
+				<img src="../static/img/helpdesk-icon.png" style="width:34px; margin-left:30px;" class="rounded-circle user_img_msg" id="idea">			  
+			  <span class="info">方珮珊(Susan Fang)<br>514-17909</span>
+			 </div-->
+			 <div class="element">
+			  <a class="example-image-link" href="../static/img/20211006.jpg" data-lightbox="example-1" data-title="">
+				<img src="../static/img/idea-icon.png" style="width:34px;cursor: pointer;margin-left:80px;" class="rounded-circle user_img_msg" id="idea">
+			  </a>				
+			  <span class="info">使用說明</span>
+			 </div>			 
+          </ul>
+        </div>
+      </div>
+    </nav>
+ 
+    <div class="container" id="main-content" style="margin-top:80px; height:460px;">
+	
+	{% extends 'home.html'%}
+      <!--div class="row" style="  margin: auto;">	  
+		 <div class="card text-white bg-success mb-3" style="max-width: 18rem; margin:auto; cursor: pointer;" onclick="location.href='/gbim/smartfr';">
+		  <div class="card-header" style="font-size: 25px;">SMART FR 決策輔助</div>
+		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+			 <img class="card-img center" src="../static/img/decision.png" style="width: 60%;margin-top:-20px;" alt="Card image">
+		  </div>
+		 </div>
+		 
+		 <div class="card text-white bg-success mb-3" style="max-width: 18rem; margin: auto; cursor: pointer;">
+		  <div class="card-header" style="font-size: 25px;">全球不良品區域預測</div>
+		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+			 <img class="card-img center" src="../static/img/map.png" style="width: 60%;margin-top:-20px; " alt="Card image">
+		  </div>
+		 </div>
+		 
+		 <div class="card text-white bg-success mb-3" style="max-width: 18rem;margin: auto; cursor: pointer;">
+		  <div class="card-header" style="font-size: 25px;">全球備品庫存推薦</div>
+		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+			 <img class="card-img center" src="../static/img/recommend.png" style="width: 100%;margin-top:-20px;" alt="Card image">
+		  </div>
+		 </div>
+	  </div> 
+	  
+	  <div class="row" style="  margin: auto;">	 
+		 <div class="card text-white bg-success mb-3" style="max-width: 18rem;margin: auto; cursor: pointer;">
+		  <div class="card-header" style="font-size: 25px;">維修中心庫存安全量</div>
+		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+			 <img class="card-img center" src="../static/img/storage.png" style="width: 65%;margin-top:-10px;" alt="Card image">
+		  </div>
+		 </div>
+		 
+		 <div class="card text-white bg-warning  mb-3 " style="max-width: 18rem;margin: auto; cursor: pointer;">
+		  <div class="card-header" style="font-size: 25px;"> 檢核機制 </div>
+		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+			 <img class="card-img center" src="../static/img/check.png" style="width: 50%;" alt="Card image">
+		  </div>
+		 </div>
+		 
+		 <div class="card text-white bg-warning  mb-3" style="max-width: 18rem;margin: auto; cursor: pointer;">
+		  <div class="card-header" style="font-size: 25px;">管理者功能</div>		  
+		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+			 <img class="card-img center" src="../static/img/dashboard.png" style="width: 90%;margin-top:-10px;" alt="Card image">
+		  </div>
+		 </div>
+      </div-->
+    </div> 
+	 
+	<div class="container" style=" ">
+		<div class="row" style=" float: right;  ">
+			<div class="input-group">
+			  <div class="input-group-prepend">
+				<span class="input-group-text" id="">聯絡窗口</span>
+			  </div>
+			   <div class="input-group-prepend">
+				<span class="input-group-text" id="">方珮珊(Susan Fang)  514-17909</span>&nbsp;&nbsp;&nbsp;&nbsp;
+			  </div><!--button type="button" class="btn btn-secondary">使用說明</button-->	
+			</div>		  
+		</div>
+	</div>	
+</body>
+<script>
+$(".element").hover(
+	function(){
+		$(this).find(".info").fadeIn(500);
+	}, function(){
+		$(this).find(".info").fadeOut(500);
+	});
+</script>
+</script>
+<style>
+.element{
+	display:block;
+}
+.title, .info{
+	margin-top:0px;
+    display:inline-block;
+    float:left;
+	position:absolute;
+	background: #EDC200;
+}
+.title{
+    padding-right:10px;
+    color:#002389;
+    cursor: pointer;
+}
+.info{
+    border:#002389 dashed 1px;
+    max-width:350px;
+    padding:10px;
+    display:none;
+}
+</style>
+</html>

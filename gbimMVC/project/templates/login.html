@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>售後服務備品庫存預測</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"> 
+<link rel="stylesheet" type="text/css" href="../static/css/util.css">
+<link rel="stylesheet" type="text/css" href="../static/css/main.css"> 
+<script src="../static/js/3.1.1/jquery.js"></script>
+
+<!--script src="../static/js/userTrack.js"></script-->
+<script>	
+$(document).ready(function() {  
+	//userTrackConfig.serviceKey = 222222;
+	//saveEventLog('login');		
+}); 
+</script>
+</head>
+<body>
+	
+	<div class="limiter">
+		<div class="container-login100">
+			<div class="wrap-login100 p-l-55 p-r-55 p-t-65 p-b-50">
+				<form class="login100-form validate-form" action="/gbim/login" method="post" id="form1">
+					<span class="login100-form-title p-b-33">
+						售後服務備品庫存預測
+					</span>
+                    <span class="login70-form-title ">
+						 請使用電腦開機帳號登入
+					</span>
+					<div class="wrap-input100 validate-input"  >
+						<input class="input100" type="text" id="UserID" name="UserID" placeholder="UserID">
+						<span class="focus-input100-1"></span>
+						<span class="focus-input100-2"></span>
+					</div>
+
+					<div class="wrap-input100 rs1 validate-input" data-validate="Password is required">
+						<input class="input100" type="password" id="password" name="password" placeholder="Password">
+						<span class="focus-input100-1"></span>
+						<span class="focus-input100-2"></span>
+					</div>
+					{{ data['error'] }}
+					<div class="container-login100-form-btn m-t-20">
+						<button class="login100-form-btn" type="submit" form="form1" value="Submit">
+							登入
+						</button>
+					</div>
+ 
+				</form>
+			</div>
+		</div>
+	</div>
+	 
+</body>
+</html>
+
+ 

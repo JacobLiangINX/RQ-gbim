@@ -1,0 +1,376 @@
+{% extends "layout.html" %}
+{% block title %}SMART FR{% endblock %} 
+{% block content %}
+<style>
+#chartdiv {
+  width: 100%;
+  height: 500px;
+}
+#chartdiv2 {
+  width: 100%;
+  height: 500px;
+}
+</style>
+<script type="text/javascript"> 
+
+
+smart_fr_predict = "{{data['smart_fr_predict']}}"
+//console.log("{{data['smart_fr_predict']}}")
+console.log(smart_fr_predict)
+
+
+$(document).ready(function() {   
+	 
+ am5.ready(function() {
+
+// Create root element
+// https://www.amcharts.com/docs/v5/getting-started/#Root_element
+var root = am5.Root.new("chartdiv");
+
+
+// Set themes
+// https://www.amcharts.com/docs/v5/concepts/themes/
+root.setThemes([
+  am5themes_Animated.new(root)
+]);
+
+
+// Create chart
+// https://www.amcharts.com/docs/v5/charts/xy-chart/
+var chart = root.container.children.push(am5xy.XYChart.new(root, {
+  panX: false,
+  panY: false,
+  wheelX: "panX",
+  wheelY: "zoomX",
+  layout: root.verticalLayout
+}));
+// Add scrollbar
+// https://www.amcharts.com/docs/v5/charts/xy-chart/scrollbars/
+
+
+chart.set("scrollbarX", am5.Scrollbar.new(root, {
+  orientation: "horizontal"
+}));
+var data = [];
+
+{% for smart in data['smart_fr_predict'] %} 
+	data.push({"year":"{{data['smart_fr_predict'][smart]['YYYYMM']}}", 
+	"FR-MP":{{data['smart_fr_predict'][smart]['FR-MP']}},
+	"FR-EOL":{{data['smart_fr_predict'][smart]['FR-EOL']}},
+	"LR-MP":{{data['smart_fr_predict'][smart]['LR-MP']}},
+	"LR-EOL":{{data['smart_fr_predict'][smart]['LR-EOL']}}})
+     
+{% endfor %}
+console.log('data:')
+console.log(data) 
+
+// Create axes
+// https://www.amcharts.com/docs/v5/charts/xy-chart/axes/
+var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+  categoryField: "year",
+  renderer: am5xy.AxisRendererX.new(root, {}),
+  tooltip: am5.Tooltip.new(root, {})
+}));
+
+xAxis.data.setAll(data);
+
+var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+  min: 0,
+  renderer: am5xy.AxisRendererY.new(root, {})
+}));
+
+
+// Add legend
+// https://www.amcharts.com/docs/v5/charts/xy-chart/legend-xy-series/
+var legend = chart.children.push(am5.Legend.new(root, {
+  centerX: am5.p50,
+  x: am5.p50
+}));
+
+
+// Add series
+// https://www.amcharts.com/docs/v5/charts/xy-chart/series/
+function makeSeries(name, fieldName) {
+  var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+    name: name,
+    stacked: true,
+    xAxis: xAxis,
+    yAxis: yAxis,
+    valueYField: fieldName,
+    categoryXField: "year"
+  }));
+
+  series.columns.template.setAll({
+    tooltipText: "{name}, {categoryX}: {valueY}",
+    tooltipY: am5.percent(10)
+  });
+  series.data.setAll(data);
+
+  // Make stuff animate on load
+  // https://www.amcharts.com/docs/v5/concepts/animations/
+  series.appear();
+
+  series.bullets.push(function () {
+    return am5.Bullet.new(root, {
+      sprite: am5.Label.new(root, {
+        text: "{valueY}",
+        fill: root.interfaceColors.get("alternativeText"),
+        centerY: am5.p50,
+        centerX: am5.p50,
+        populateText: true
+      })
+    });
+  });
+
+  legend.data.push(series);
+}
+
+makeSeries("FR-EOL", "FR-EOL");
+makeSeries("FR-MP", "FR-MP");
+makeSeries("LR-EOL", "LR-EOL"); 
+makeSeries("LR-MP", "LR-MP"); 
+// Make stuff animate on load
+// https://www.amcharts.com/docs/v5/concepts/animations/
+chart.appear(1000, 100);
+
+
+
+
+}); // end am5.ready()
+
+});
+ 
+ 
+</script>
+	 
+  <div class="row" style="  margin: auto;">	 
+    <div class="col-md-6" style="">
+      <div id="chartdiv"></div>  
+	</div>  
+	<div class="col-md-6" style="">
+      <div id="chartdiv2"></div>  
+	</div>  
+	<!--div class="col-md-4" style="">
+      <div id=""></div>  
+	</div-->  
+  </div> 
+  <div class="row" style="  margin: auto;">	  
+  </div>
+
+<script>
+am5.ready(function() {
+
+// Create root element
+// https://www.amcharts.com/docs/v5/getting-started/#Root_element
+var root = am5.Root.new("chartdiv2");
+
+// Set themes
+// https://www.amcharts.com/docs/v5/concepts/themes/
+root.setThemes([am5themes_Animated.new(root)]);
+
+var container = root.container.children.push(
+  am5.Container.new(root, {
+    width: am5.p100,
+    height: am5.p100,
+    layout: root.horizontalLayout
+  })
+);
+
+// Create main chart
+// https://www.amcharts.com/docs/v5/charts/percent-charts/pie-chart/
+var chart = container.children.push(
+  am5percent.PieChart.new(root, {
+    tooltip: am5.Tooltip.new(root, {})
+  })
+);
+
+// Create series
+// https://www.amcharts.com/docs/v5/charts/percent-charts/pie-chart/#Series
+var series = chart.series.push(
+  am5percent.PieSeries.new(root, {
+    valueField: "value",
+    categoryField: "category",
+    alignLabels: false
+  })
+);
+
+series.labels.template.setAll({
+  textType: "circular",
+  radius: 4
+});
+series.ticks.template.set("visible", false);
+series.slices.template.set("toggleKey", "none");
+
+// add events
+series.slices.template.events.on("click", function(e) {
+  selectSlice(e.target);
+});
+
+// Create sub chart
+// https://www.amcharts.com/docs/v5/charts/percent-charts/pie-chart/
+var subChart = container.children.push(
+  am5percent.PieChart.new(root, {
+    radius: am5.percent(50),
+    tooltip: am5.Tooltip.new(root, {})
+  })
+);
+
+// Create sub series
+// https://www.amcharts.com/docs/v5/charts/percent-charts/pie-chart/#Series
+var subSeries = subChart.series.push(
+  am5percent.PieSeries.new(root, {
+    valueField: "value",
+    categoryField: "category"
+  })
+);
+
+subSeries.data.setAll([
+  { category: "AA-BD4", value: 0 },
+  { category: "AUTO-BD5", value: 0 },
+  { category: "CE", value: 0 },
+  { category: "IAVM", value: 0 },
+  { category: "MONITOR", value: 0 },
+  { category: "MP", value: 0 },
+  { category: "NB", value: 0 },
+  { category: "SET_TV", value: 0 },
+  { category: "TABLET", value: 0 },
+  { category: "TV", value: 0 }
+]);
+subSeries.slices.template.set("toggleKey", "none");
+
+var selectedSlice;
+
+series.on("startAngle", function() {
+  updateLines();
+});
+
+container.events.on("boundschanged", function() {
+  root.events.on("frameended", function(){
+    updateLines();
+   })
+})
+
+function updateLines() {
+  if (selectedSlice) {
+    var startAngle = selectedSlice.get("startAngle");
+    var arc = selectedSlice.get("arc");
+    var radius = selectedSlice.get("radius");
+
+    var x00 = radius * am5.math.cos(startAngle);
+    var y00 = radius * am5.math.sin(startAngle);
+
+    var x10 = radius * am5.math.cos(startAngle + arc);
+    var y10 = radius * am5.math.sin(startAngle + arc);
+
+    var subRadius = subSeries.slices.getIndex(0).get("radius");
+    var x01 = 0;
+    var y01 = -subRadius;
+
+    var x11 = 0;
+    var y11 = subRadius;
+
+    var point00 = series.toGlobal({ x: x00, y: y00 });
+    var point10 = series.toGlobal({ x: x10, y: y10 });
+
+    var point01 = subSeries.toGlobal({ x: x01, y: y01 });
+    var point11 = subSeries.toGlobal({ x: x11, y: y11 });
+
+    line0.set("points", [point00, point01]);
+    line1.set("points", [point10, point11]);
+  }
+}
+
+// lines
+var line0 = container.children.push(
+  am5.Line.new(root, {
+    position: "absolute",
+    stroke: root.interfaceColors.get("text"),
+    strokeDasharray: [2, 2]
+  })
+);
+var line1 = container.children.push(
+  am5.Line.new(root, {
+    position: "absolute",
+    stroke: root.interfaceColors.get("text"),
+    strokeDasharray: [2, 2]
+  })
+);
+
+// Set data
+// https://www.amcharts.com/docs/v5/charts/percent-charts/pie-chart/#Setting_data
+series.data.setAll([
+  {
+    category: "LR",
+    value: 213488,
+    subData: [
+      { category: "AA-BD4", value:1566  },
+	  { category: "AUTO-BD5", value:888  },
+      { category: "CE", value: 13419 },
+      { category: "IAVM", value:5234  },
+      { category: "MONITOR", value: 15779 },
+	  { category: "MP", value:61143  },
+      { category: "NB", value: 47286 },
+      { category: "SET_TV", value: 5 },
+	  { category: "TABLET", value:18710  },
+      { category: "TV", value: 49458 }
+      
+    ]
+  },
+  {
+    category: "FR",
+    value: 221292,
+    subData: [
+      { category: "AA-BD4", value: 955 },
+	  { category: "AUTO-BD5", value: 317 },
+      { category: "CE", value: 292 },
+      { category: "IAVM", value: 1056 },
+      { category: "MONITOR", value: 32866 },
+	  { category: "MP", value: 0 },
+      { category: "NB", value: 80544 },
+      { category: "SET_TV", value:71262  },
+	  { category: "TABLET", value:98  },
+      { category: "TV", value:33902  }
+    ]
+  } 
+]);
+ 
+
+function selectSlice(slice) {
+  selectedSlice = slice;
+  var dataItem = slice.dataItem;
+  var dataContext = dataItem.dataContext;
+
+  if (dataContext) {
+    var i = 0;
+    subSeries.data.each(function(dataObject) {
+      subSeries.data.setIndex(i, dataContext.subData[i]);
+      i++;
+    });
+  }
+
+  var middleAngle = slice.get("startAngle") + slice.get("arc") / 2;
+  var firstAngle = series.dataItems[0].get("slice").get("startAngle");
+
+  series.animate({
+    key: "startAngle",
+    to: firstAngle - middleAngle,
+    duration: 1000,
+    easing: am5.ease.out(am5.ease.cubic)
+  });
+  series.animate({
+    key: "endAngle",
+    to: firstAngle - middleAngle + 360,
+    duration: 1000,
+    easing: am5.ease.out(am5.ease.cubic)
+  });
+}
+
+container.appear(1000, 10);
+
+series.events.on("datavalidated", function() {
+  selectSlice(series.slices.getIndex(0));
+});
+
+}); // end am5.ready()
+</script>  
+{% endblock %}
