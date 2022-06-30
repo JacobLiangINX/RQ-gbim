@@ -1,0 +1,325 @@
+{% extends "layout.html" %}
+{% block title %}SMART FR{% endblock %}
+{% block content %}
+<style>
+html, body, #main {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+}
+
+#chartdiv {
+  width: 100%;
+  height: 400px; 
+} 
+table.dataTable thead .sorting:after,
+table.dataTable thead .sorting:before,
+table.dataTable thead .sorting_asc:after,
+table.dataTable thead .sorting_asc:before,
+table.dataTable thead .sorting_asc_disabled:after,
+table.dataTable thead .sorting_asc_disabled:before,
+table.dataTable thead .sorting_desc:after,
+table.dataTable thead .sorting_desc:before,
+table.dataTable thead .sorting_desc_disabled:after,
+table.dataTable thead .sorting_desc_disabled:before {
+bottom: .5em;
+}
+</style>
+<script src="../static/js/simpleRequire.js"></script>
+<script src="../static/js/config.js"></script>
+  <!-- 可視圖 -->
+  <div class="row" style="  margin: auto;">	 
+    <div id="chartdiv" style="margin-top: ;"></div>   
+  </div> 
+  
+  <!-- 查詢 -->
+  <div class="row" style="margin-top:20px;">
+    <div class="col">
+      <select class="form-select search_keyword" aria-label="Default select example" id="FCST_MONTH"> 
+	    {% for ym in data['fcst_month_search']   %}
+	      <option value="{{ ym }}">{{ ym }}</option>
+	    {% endfor %}
+	  </select>
+    </div>
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="機種(Grouping)" id="MOTHER_MODEL_NAME">
+    </div>
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="產品週期" id="PHASE">
+    </div> 
+	<div class="col">
+      <button type="button" class="btn btn-secondary" onclick="download();">查詢結果下載</button>
+    </div>
+  </div>
+  
+  <!-- 表 -->
+  <div class="row" style="margin-top:20px;">
+    <table id="set_audit" class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
+	  <thead align="center">
+	    <tr>
+			<th rowspan="2" class="th-sm">當月(N)</th>
+			<th rowspan="2" class="th-sm">機種(Grouping)</th>
+			<th rowspan="2" class="th-sm">機種</th>
+			<th rowspan="2" class="th-sm">產品週期</th>
+			<td colspan="4">新品(Set)</td>
+			<td colspan="4">整新品(Set)</td>
+		</tr>
+		<tr>
+			<th class="th-sm">(N-4)個月前的調撥量</th>
+			<th class="th-sm">(N-4)個月前的耗用量</th>
+			<th class="th-sm">本月累積耗用量</th>
+			<th class="th-sm">平均月耗用</th>
+			<th class="th-sm">(N-2)個月前的調撥量</th>
+			<th class="th-sm">(N-2)個月前的耗用量</th>
+			<th class="th-sm">本月累積耗用量</th>
+			<th class="th-sm">平均月耗用</th>
+		</tr> 
+	  </thead>
+	  <tbody id="fcst_output_checkup_list">
+	  {% for i in data['fcst_output_checkup_list'] %} 
+	    <tr>
+		  <td>{{ data['fcst_output_checkup_list'][i]['FCST_MONTH'] }}</td>
+		  <td>{{ data['fcst_output_checkup_list'][i]['MOTHER_MODEL_NAME'] }}</td>
+		  <td>{{ data['fcst_output_checkup_list'][i]['MODEL_NAME'] }}</td>
+		  <td>{{ data['fcst_output_checkup_list'][i]['PHASE'] }}</td>
+		  <td>{{ data['fcst_output_checkup_list'][i]['TRANSFER_N4'] }}</td>
+		  <td>{{ data['fcst_output_checkup_list'][i]['COMSUMPTION_N4_A'] }}</td>
+		  <td>{{ data['fcst_output_checkup_list'][i]['COMSUMPTION_A'] }}</td>
+		  <td>{{ data['fcst_output_checkup_list'][i]['COMSUMPTION_AVG_A'] }}</td>
+		  <td>{{ data['fcst_output_checkup_list'][i]['TRANSFER_N2'] }}</td>
+		  <td>{{ data['fcst_output_checkup_list'][i]['COMSUMPTION_N2_B'] }}</td>
+		  <td>{{ data['fcst_output_checkup_list'][i]['COMSUMPTION_B'] }}</td>
+		  <td>{{ data['fcst_output_checkup_list'][i]['COMSUMPTION_AVG_B'] }}</td>
+		</tr>
+      {% endfor %}
+	  </tbody>
+	</table>  
+  </div>
+
+<script type="text/javascript">
+var ajaxUrlPort = '10.55.14.209:30083/gbim/' 
+function filter(){ 
+	filter_dict = [];
+	FCST_MONTH = $("#FCST_MONTH").val().trim()
+	//alert($("#FCST_MONTH").val().trim())
+	if(FCST_MONTH != ''){
+		filter_dict.push({key:"FCST_MONTH",value:FCST_MONTH})
+	} 
+	if($("#MOTHER_MODEL_NAME").val().trim() != ''){
+		filter_dict.push({key:"MOTHER_MODEL_NAME",value:$("#MOTHER_MODEL_NAME").val().trim()})
+	}
+	if($("#PHASE").val().trim() != ''){
+		filter_dict.push({key:"PHASE",value:$("#PHASE").val().trim()})
+	}
+	tmp = [];
+	for(i in fcst_output_checkup_list){
+		accept = 1;
+		for(f in filter_dict){		
+			key = filter_dict[f]["key"];
+			value = filter_dict[f]["value"];			
+			if(fcst_output_checkup_list[i][key] != value){
+				accept = 0;
+			}
+		}
+		if(accept == 1){
+			tmp.push(fcst_output_checkup_list[i])
+		}
+	}
+	console.log(tmp)
+	
+	var table = $('#set_audit').DataTable();
+	table.clear().draw();
+	table.destroy();
+	
+	html_string = ''
+	for(i in tmp){	     
+		html_string = html_string+"<tr><td>"+FCST_MONTH+"</td>"
+		+'<td>'+tmp[i]['MOTHER_MODEL_NAME']+'</td>'
+		+'<td>'+tmp[i]['MODEL_NAME']+'</td>'
+		+'<td>'+tmp[i]['PHASE']+'</td>'		
+		+'<td>'+tmp[i]['TRANSFER_N4']+'</td>'
+		+'<td>'+tmp[i]['COMSUMPTION_N4_A']+'</td>'
+		+'<td>'+tmp[i]['COMSUMPTION_A']+'</td>'
+		+'<td>'+tmp[i]['COMSUMPTION_AVG_A']+'</td>'
+		+'<td>'+tmp[i]['TRANSFER_N2']+'</td>'
+		+'<td>'+tmp[i]['COMSUMPTION_N2_B']+'</td>'
+		+'<td>'+tmp[i]['COMSUMPTION_B']+'</td>'
+		+'<td>'+tmp[i]['COMSUMPTION_AVG_B']+'</td></tr>'
+	} 
+	$("#fcst_output_checkup_list").html(html_string) 
+ 
+	$('#set_audit').DataTable({
+		  "Sorting": [],
+		  columnDefs: [{
+		  orderable: false 
+		  }]
+		}); 
+}
+function decodeHtml(html) {
+    var txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+}
+function download(){    
+    var url = '/gbim/download';
+	var form = $('<form action="' + url + '" method="post" style="display:none">' +
+	  '<input type="text" name="filename" value="VIZIO_FCST_OUTPUT_CHECKUP.xlsx" />' +
+	  '<input type="text" name="FCST_MONTH" value="'+$("#FCST_MONTH").val().trim()+'" />' +
+	  '<input type="text" name="MOTHER_MODEL_NAME" value="'+$("#MOTHER_MODEL_NAME").val().trim()+'" />' +
+	  '<input type="text" name="PHASE" value="'+$("#PHASE").val().trim()+'" />' +
+	  '</form>');
+	$('body').append(form);
+	form.submit(); 
+}
+$(document).ready(function() {  
+  $(".search_keyword").change(function(){
+    filter();
+  });  
+	$('#set_audit').DataTable({
+    "Sorting": [],
+    columnDefs: [{
+      orderable: false 
+    }]
+  });
+  filter();
+});
+var fcst_output_checkup_list = JSON.parse(decodeHtml("{{data['fcst_output_checkup_list']}}").replace(/'/g, '"'))
+var fcst_month = JSON.parse(decodeHtml("{{data['fcst_month']}}").replace(/'/g, '"'))
+console.log('fcst_month:')
+console.log(fcst_month)
+var FCST_QTY = JSON.parse(decodeHtml("{{data['FCST_QTY']}}").replace(/'/g, '"'))
+console.log('FCST_QTY:')
+console.log(FCST_QTY)
+
+Over_Line = FCST_QTY.map(item=>Math.round(item*1.1,2)) 
+console.log('Over_Line:')
+console.log(Over_Line)
+Under_Line = FCST_QTY.map(item=>item-item*0.05)
+console.log('Under_Line:')
+console.log(Under_Line)
+
+var COMSUMPTION = JSON.parse(decodeHtml("{{data['COMSUMPTION']}}").replace(/'/g, '"'))
+var upper_bound = JSON.parse(decodeHtml("{{data['upper_bound']}}").replace(/'/g, '"'))
+var lower_bound = JSON.parse(decodeHtml("{{data['lower_bound']}}").replace(/'/g, '"'))
+console.log('COMSUMPTION:')
+console.log(COMSUMPTION)
+//2021May~2022Apr
+//VIZIO_SELL_THRU = [2167,10090,16528,10247,10548,18888,47111,26737,23291,25941,30593,25219]
+//2021Dec~2022Apr
+VIZIO_SELL_THRU = [26737,23291,25941,30593,25219]
+//var legendColor = ['#FFA500','#4169E1','#6B8E23','#800000','#000000']
+var legendColor = ['#4169E1','#6B8E23','#800000','#000000']
+
+require(['echarts'], function (echarts) {
+var chart = echarts.init(document.getElementById('chartdiv'));
+ 
+chart.setOption( option = {
+  title: {
+    //text: 'Stacked Area Chart'
+  },
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: {
+      type: 'cross',
+      label: {
+        backgroundColor: '#6a7985'
+      }
+    }
+  },
+  legend: {
+    //data: ['Email', 'Union Ads', 'Video Ads', 'Direct', 'Search Engine']
+  },
+  color: legendColor,
+  toolbox: {
+    feature: {
+      saveAsImage: {}
+    }
+  },
+  grid: {
+    left: '3%',
+    right: '4%',
+    bottom: '3%',
+    containLabel: true
+  },
+  xAxis: [
+    {
+      type: 'category',
+      boundaryGap: false,
+      data: fcst_month//['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    }
+  ],
+  yAxis: [
+    {
+	  name: '數量(台)',
+      type: 'value'
+    }/*,
+	{
+	  name: 'Sell through',
+	  type: 'value'
+	}*/
+  ],
+  series: [
+  /*
+    {
+      name: 'Sell through',
+      type: 'line',
+      //stack: 'Total',
+	  //label: {show: true},
+	  yAxisIndex: 1,
+      data: VIZIO_SELL_THRU 
+    },*/    
+    {
+      name: '預估需求量(overall)',
+      type: 'line',
+      //stack: 'Total',
+	  //label: {show: true},
+      data: FCST_QTY 
+    },
+    
+    {
+      name: 'Under Line',
+      type: 'line',
+	  //label: {show: true},
+      //stack: 'Total',
+	  lineStyle: {
+        width: 2,
+        type: 'dashed'
+      },
+      data: lower_bound//Under_Line//FCST_QTY.map(item=>item*0.95) 
+    },
+	{
+      name: 'Over Line',
+      type: 'line',
+	  lineStyle: {
+        width: 2,
+        type: 'dashed'
+      },
+	  /*
+	  label: {				 
+				normal : {
+					//show: true,								 
+					formatter:function(a) {value = a.value+10000;  return value;
+					}
+				}
+			  },*/
+			  
+      //stack: 'Total',
+      //areaStyle: {}, 
+      data: upper_bound//Over_Line//FCST_QTY.map(item=>item*1.05) 
+	  
+    },
+    {
+      name: '實際耗用',
+      type: 'line',
+	  //label: {show: true},
+      //stack: 'Total',
+      data: COMSUMPTION 
+    } 
+  ]
+});
+ 
+
+})
+
+</script>  
+{% endblock %}

@@ -1,15 +1,395 @@
 {% extends "layout.html" %}
-{% block title %}SMART FR{% endblock %}
-<script type="text/javascript"> 
-$(document).ready(function() {   
-	 
-});
- 
-</script>
- 
+{% block title %}SMART FR{% endblock %} 
 {% block content %}
-  <div class="row" style="  margin: auto;">	  
+<style> 
+html, body, #main {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+}
+ 
+table.dataTable thead .sorting:after,
+table.dataTable thead .sorting:before,
+table.dataTable thead .sorting_asc:after,
+table.dataTable thead .sorting_asc:before,
+table.dataTable thead .sorting_asc_disabled:after,
+table.dataTable thead .sorting_asc_disabled:before,
+table.dataTable thead .sorting_desc:after,
+table.dataTable thead .sorting_desc:before,
+table.dataTable thead .sorting_desc_disabled:after,
+table.dataTable thead .sorting_desc_disabled:before {
+bottom: .5em;
+}      
+</style>
+<script src="../static/js/simpleRequire.js"></script>
+<script src="../static/js/config.js"></script>
+
+  <div class="row" style="  margin: auto;">
+    <div class="col-md-12" style="height: 550px;">
+      <div id="main"></div>
+	</div>  
   </div> 
-  <div class="row" style="  margin: auto;">	  
-  </div> 
+  <div class="row" style="margin-top:20px;">	 
+	<div class="col">
+	<select class="form-select" aria-label="Default select example" id="CREATE_YM">
+	  <!--option selected value="2022-02">2022-02</option-->
+	  {% for ym in data['ym_list']|sort(reverse=True)  %}
+	  <option value="{{ ym }}">{{ ym }}</option>
+	  {% endfor %}
+	</select>	
+    </div>	
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="CUSTOMER" id="customer">
+    </div>
+    <div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="FAILURE STAGE" id="failure_stage">
+    </div>
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="PRODUCT ID" id="product_id">
+    </div>
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="RC ID" id="rc_id">
+    </div>
+	<div class="col">
+      <button type="button" class="btn btn-secondary" onclick="sendFile();">查詢結果寄信</button>
+    </div>
+  </div>
+  <div class="row" style="margin-top:20px;">
+    <table id="inventory" class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
+	  <thead>
+		<tr>
+		  <th class="th-sm">資料月份</th>
+		  <th class="th-sm">CUSTOMER</th>
+		  <th class="th-sm">FAILURE STAGE</th>
+		  <th class="th-sm">PRODUCT ID</th>
+		  <th class="th-sm">RC ID</th>
+		  <th class="th-sm">QTY</th>
+		</tr>
+	  </thead>
+	  <tbody id="predict_rc_inventory_list">
+	  {% for i in data['predict_rc_inventory_list'] %} 
+	    <tr>
+		  <td>{{ data['CREATE_YM'] }}</td>
+		  <td>{{ data['predict_rc_inventory_list'][i]['customer'] }}</td>
+		  <td>{{ data['predict_rc_inventory_list'][i]['failure_stage'] }}</td>
+		  <td>{{ data['predict_rc_inventory_list'][i]['product_id'] }}</td>
+		  <td>{{ data['predict_rc_inventory_list'][i]['rc_id'] }}</td>
+		  <td>{{ data['predict_rc_inventory_list'][i]['qty'] }}</td> 		  
+		</tr>    
+      {% endfor %}
+	  </tbody>
+	</table>  
+  </div>
+<script type="text/javascript"> 
+var ajaxUrlPort = '10.55.14.209:30083/gbim/' 
+
+function filter(){
+//customer,failure_stage,product_id,rc_id
+	filter_dict = [];
+	if($("#customer").val().trim() != ''){
+		filter_dict.push({key:"customer",value:$("#customer").val().trim()})
+	}
+	if($("#failure_stage").val().trim() != ''){
+		filter_dict.push({key:"failure_stage",value:$("#failure_stage").val().trim()})
+	}
+	if($("#product_id").val().trim() != ''){
+		filter_dict.push({key:"product_id",value:$("#product_id").val().trim()})
+	}
+	if($("#rc_id").val().trim() != ''){
+		filter_dict.push({key:"rc_id",value:$("#rc_id").val().trim()})
+	} 
+	
+	tmp = [];
+	for(i in predict_rc_inventory_list){
+		//tmp
+		accept = 1;
+		for(f in filter_dict){		
+			key = filter_dict[f]["key"];
+			value = filter_dict[f]["value"];			
+			if(predict_rc_inventory_list[i][key] != value){
+				accept = 0;
+			}
+		}
+		if(accept == 1){
+			tmp.push(predict_rc_inventory_list[i])
+		}
+	}
+	console.log(tmp)
+	
+	var table = $('#inventory').DataTable();
+	table.clear().draw();
+	table.destroy();
+	//table.clear();
+	
+	html_string = ''
+	for(i in tmp){
+		html_string = html_string+"<tr><td>{{data['CREATE_YM']}}</td>"
+		+'<td>'+tmp[i]['customer']+'</td>'
+		+'<td>'+tmp[i]['failure_stage']+'</td>'
+		+'<td>'+tmp[i]['product_id']+'</td>'
+		+'<td>'+tmp[i]['rc_id']+'</td>'
+		+'<td>'+tmp[i]['qty']+'</td></tr>'
+	}
+	$("#predict_rc_inventory_list").html(html_string) 
+ 
+	$('#inventory').DataTable({
+		  "Sorting": [],
+		  columnDefs: [{
+		  orderable: false 
+		  }]
+		}); 
+}
+
+function decodeHtml(html) {
+    var txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+}
+
+var predict_rc_inventory_list =   JSON.parse(decodeHtml("{{data['predict_rc_inventory_list']}}").replace(/'/g, '"'))
+console.log('predict_rc_inventory_list:')
+console.log(predict_rc_inventory_list)
+
+function sendFile(){
+	CREATE_YM = $("#CREATE_YM").val().trim()
+	customer = $("#customer").val().trim()
+	failure_stage = $("#failure_stage").val().trim()
+	product_id = $("#product_id").val().trim()
+	rc_id = $("#rc_id").val().trim()
+	console.log('CREATE_YM:'+CREATE_YM+',customer:'+customer+',failure_stage:'+failure_stage+',product_id:'+product_id+',rc_id:'+rc_id)
+	//confirm("Press a button!") 
+	$.ajax({
+		url: "http://"+ajaxUrlPort+"/sendFile_areaforecast",
+		type: "GET",
+		dataType: 'json',
+		data:{ CREATE_YM:CREATE_YM, customer:customer, failure_stage:failure_stage, product_id:product_id, rc_id:rc_id},
+		contentType: "application/json; charset=utf-8",
+		success: function (data) { 
+			alert('資料筆數:'+data['size']+' 已經寄到'+data['UserID']+"@innolux.com")			
+			console.log(data)
+		},
+		error: function(xhr) {
+		  alert('sendFile 發生錯誤:'+JSON.stringify(xhr)); 
+		}
+	});	
+}
+
+$(document).ready(function() { 
+  $("#CREATE_YM").val("{{ data['CREATE_YM'] }}"); 
+  $(".search_keyword").change(function(){
+    filter();
+  });
+  
+  $('#CREATE_YM').on('change', function (e) {
+	var optionSelected = $("option:selected", this);
+	var valueSelected = this.value;
+	var url = '/gbim/areaforecast';
+	var form = $('<form action="' + url + '" method="post">' +
+	  '<input type="text" name="CREATE_YM" value="' + valueSelected + '" />' +
+	  '</form>');
+	$('body').append(form);
+	form.submit();
+  });	
+   
+  $('#inventory').DataTable({
+	  "Sorting": [],
+	  columnDefs: [{
+	    orderable: false 
+       }]
+  }); 
+});
+
+//var inventory_list = ['A&D-US','ACCU','Avatek','COSMO','EASCON','GOC','HL2','HL3','HLM','JLM','NDM','NJJ','NLM','PCZ','SEK','SMM','TGO','TLM','UPLUS','ZZHC','IGS']
+var inventory_list = JSON.parse(decodeHtml("{{data['inventory_list']}}").replace(/'/g, '"'));
+var predict_rc_inventory = JSON.parse(decodeHtml("{{data['predict_rc_inventory']}}").replace(/'/g, '"'));
+var ym_list = JSON.parse(decodeHtml("{{data['ym_list']}}").replace(/'/g, '"'));
+    
+colorList = ['#D8BFD8','#008000','#F0E68C','#F0E68C','#32CD32','#DCDCDC','#8B008B','#FA8072','#E6E6FA','#FF69B4','#FFC0CB','#FFD700','#87CEFA','#BC8F8F','#AFEEEE','#B0C4DE','#7CFC00','#66CDAA','#808000','#DDA0DD','#FF4500'];
+
+FR_list = []
+LR_list = []
+series = []
+data = []
+legendData = []
+legendColor = []
+console.log('predict_rc_inventory:')
+console.log(predict_rc_inventory)
+for (const ym in predict_rc_inventory) { 
+	for( i in inventory_list){		
+		inventory = inventory_list[i] 
+		data.push({'name':inventory+'-FR'})
+		data.push({'name':inventory+'-LR'})
+		legendData.push(inventory+'-FR')
+		
+		legendData.push(inventory+'-LR')
+		
+		if(predict_rc_inventory[ym][inventory+'-FR'] !== undefined && predict_rc_inventory[ym][inventory+'-LR'] !== undefined){    show = parseInt(predict_rc_inventory[ym][inventory+'-FR']) > 9000 ? true : false;
+			legendColor.push(colorList[i])
+			legendColor.push(colorList[i])
+			series.push({
+			  name: inventory+'-FR',
+			  type: 'bar',
+			  label: {				 
+					normal : {
+						show: show,								 
+						formatter:function(a) {value = a.value; if(!value&&value!==0) return 0; let str = value.toString(); let reg = str.indexOf(".") > -1 ? /(\d)(?=(\d{3})+\.)/g : /(\d)(?=(?:\d{3})+$)/g; return str.replace(reg,"$1,");
+						}
+					}
+			  },
+			  stack: 'FR',
+			  emphasis: {
+				focus: 'series'
+			  },
+			  data: [{
+				  value: parseInt(predict_rc_inventory[ym][inventory+'-FR']) ,
+				  itemStyle: {
+					color: colorList[i]
+				  }
+				}]			   
+			});
+			
+			show = parseInt(predict_rc_inventory[ym][inventory+'-LR']) > 9000 ? true : false;
+			series.push({
+			  name: inventory+'-LR',
+			  type: 'bar',
+			  label: {				 
+					normal : {
+						show: show,								 
+						formatter:function(a) {value = a.value; if(!value&&value!==0) return 0; let str = value.toString(); let reg = str.indexOf(".") > -1 ? /(\d)(?=(\d{3})+\.)/g : /(\d)(?=(?:\d{3})+$)/g; return str.replace(reg,"$1,");
+						}
+					}
+			  },
+			  stack: 'LR',
+			  emphasis: {
+				focus: 'series'
+			  },
+			  data: [{
+				  value: parseInt(predict_rc_inventory[ym][inventory+'-LR']) ,
+				  itemStyle: {
+					color: colorList[i]
+				  }
+				}]
+			});			
+		}else if(predict_rc_inventory[ym][inventory+'-FR'] !== undefined && predict_rc_inventory[ym][inventory+'-LR'] == undefined){ 
+			legendColor.push(colorList[i])
+			legendColor.push(colorList[i]) 
+			show = parseInt(predict_rc_inventory[ym][inventory+'-FR']) > 9000 ? true : false;
+			series.push({
+			  name: inventory+'-FR',
+			  type: 'bar',
+			  label: {				 
+					normal : {
+						show: show,								 
+						formatter:function(a) {value = a.value; if(!value&&value!==0) return 0; let str = value.toString(); let reg = str.indexOf(".") > -1 ? /(\d)(?=(\d{3})+\.)/g : /(\d)(?=(?:\d{3})+$)/g; return str.replace(reg,"$1,");
+						}
+					}
+			  },
+			  stack: 'FR',
+			  emphasis: {
+				focus: 'series'
+			  },
+			  data: [{
+				  value: parseInt(predict_rc_inventory[ym][inventory+'-FR']) ,
+				  itemStyle: {
+					color: colorList[i]
+				  }
+				}]
+			});
+			series.push({
+			  name: inventory+'-LR',
+			  type: 'bar',
+			  label: {
+				show: false
+			  },
+			  stack: 'LR',
+			  emphasis: {
+				focus: 'series'
+			  },
+			  data: [0]
+			});
+		}else if(predict_rc_inventory[ym][inventory+'-FR'] == undefined && predict_rc_inventory[ym][inventory+'-LR'] !== undefined){ 
+			legendColor.push(colorList[i])
+			legendColor.push(colorList[i])
+			//lr = predict_rc_inventory[ym][inventory+'-LR']
+			//LR_list.push(lr)			
+			series.push({
+			  name: inventory+'-FR',
+			  type: 'bar',
+			  label: {
+				show: false
+			  },
+			  stack: 'FR',
+			  emphasis: {
+				focus: 'series'
+			  },
+			  data: [0]
+			}); 
+			show = parseInt(predict_rc_inventory[ym][inventory+'-LR']) > 9000 ? true : false;
+			series.push({
+			  name: inventory+'-LR',
+			  type: 'bar',
+			  label: {				 
+					normal : {
+						show: show,								 
+						formatter:function(a) {value = a.value; if(!value&&value!==0) return 0; let str = value.toString(); let reg = str.indexOf(".") > -1 ? /(\d)(?=(\d{3})+\.)/g : /(\d)(?=(?:\d{3})+$)/g; return str.replace(reg,"$1,");
+						}
+					}
+			  },
+			  stack: 'LR',
+			  emphasis: {
+				focus: 'series'
+			  },
+			  data: [{
+				  value: parseInt(predict_rc_inventory[ym][inventory+'-LR']) ,
+				  itemStyle: {
+					color: colorList[i]
+				  }
+				}]
+			});
+		}
+	}	
+} 
+//console.log('series:')
+//console.log(series)
+
+require(['echarts'], function (echarts) {
+
+var mainEl = document.getElementById('main' );
+var chart = echarts.init(mainEl ); 
+chart.setOption( option = {
+  tooltip: {},
+  legend: {},
+  color: legendColor,
+  //legend: {
+//	data:legendData
+	//},
+  grid: {
+    left: '3%',
+    right: '4%',
+    bottom: '3%',
+    containLabel: true
+  },
+  xAxis: [
+    {
+      type: 'category',
+      data: ym_list 
+    }
+  ],
+  yAxis: [
+    {
+      type: 'value'
+    }
+  ],
+  series: series
+});
+
+var dragging;
+var draggingDataIndex;
+var dx;
+var dy;
+var zr = chart.getZr();
+ 
+})
+       
+</script>
 {% endblock %}

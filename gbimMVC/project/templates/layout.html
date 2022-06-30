@@ -6,14 +6,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="description" content="">
 <meta name="author" content=""> 
+
+<!--link rel="stylesheet" href="../static/css/qaSTDUITemplate.css"-->
 <link rel="icon" href="../static/img/IDD_favicon.png">
 <script src="../static/js/3.1.1/jquery.js"></script>
 <!--script src="../static/js/userTrack.js"></script-->
-<script src="../static/js/bootstrap.min.js"></script>  
+<link rel="stylesheet" href="https://mdbcdn.b-cdn.net/wp-content/themes/mdbootstrap4/docs-app/css/dist/mdb5/standard/compiled.min.css">
 <link href="../static/css/bootstrap.min.css" rel="stylesheet">  
 
 <link rel="stylesheet" href="../static/css/lightbox.min.css"> 
-<script src="../static/js/lightbox-plus-jquery.min.js"></script>
+
 
 <!--script src="../static/js/venders/index.js"></script>
 <!--script src="../static/js/venders/xy.js"></script>
@@ -24,10 +26,17 @@
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
  
 <script src="https://cdn.amcharts.com/lib/5/percent.js"></script> 
-
+ 
+<script src="../static/js/lightbox-plus-jquery.min.js"></script>
 
 <script src="../static/js/main.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
+<script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+ 
+<script src="../static/js/popper.min.js"></script> 
+<script src="../static/js/bootstrap.min.js"></script>  
 
+ 
 <style>
 #chartdiv {
   width: 100%;
@@ -45,13 +54,29 @@
   margin-left: auto;
   margin-right: auto;
 }
+
+.watermark {
+      position:fixed ;
+      opacity:0.5;
+      font-size: 1.5em; 
+      font-style:italic;
+      text-align: center;
+      z-index: 999;
+	  
+	  color:#ff7f50;
+      /* bottom: 40%; */
+      /* right: 30%; */
+       transform:rotate(380deg); 
+      /*-webkit-transform:rotate(380deg);*/
+      pointer-events: none;
+} 
 </style>
   </head>
   <body>
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" style="padding: .0rem 1rem;">
       <div class="container">
         <a class="navbar-brand" href="/gbim">
-		  <font color="#FFD700">售後服務備品庫存預測</font>
+		  <font color="#FFD700">RQM庫存預測平台</font>
 		</a> 			
         <div class="collapse navbar-collapse" id="navbarResponsive">
           <ul class="navbar-nav">
@@ -61,9 +86,15 @@
 			    <span class="dropdown-item" onclick="page_router(1)">SMART FR 決策輔助</span> 
 				<span class="dropdown-item" onclick="page_router(2)">全球不良品區域預測</span>
 				<span class="dropdown-item" onclick="page_router(3)">全球備品庫存推薦</span>
-				<span class="dropdown-item" onclick="page_router(4)">維修中心庫存安全量</span>
-				<span class="dropdown-item" onclick="page_router(5)">檢核機制</span>
-				<span class="dropdown-item" onclick="page_router(6)">管理者功能</span>
+				<span class="dropdown-item" onclick="page_router(4)">呆滯物料預警</span>
+				<span class="dropdown-item" onclick="page_router(5)">維修缺料分析</span>
+				<span class="dropdown-item" onclick="page_router(6)">檢核機制</span>
+				<span class="dropdown-item" onclick="page_router(7)">管理者功能</span>
+				<span class="dropdown-item" onclick="page_router(8)">整機-備品-Forscast</span>
+				<span class="dropdown-item" onclick="page_router(9)">整機-備品-檢核</span>
+				<span class="dropdown-item" onclick="page_router(11)">整機-FTP-報表</span>
+				<span class="dropdown-item" onclick="page_router(10)">整機-物料</span>
+				<span class="dropdown-item" onclick="page_router(20)">CoPQ四大指標</span>
               </div>
             </li>
 			
@@ -84,18 +115,18 @@
       </div>
     </nav>
   
-    <div class="container" id="main-content" style="margin-top:50px; height:490px;">
+    <div class="container" id="main-content" style="margin-top:50px; height:;max-width:1263px;">
 	 {% block content %}{% endblock %}
     </div> 
 	 
-	<div class="container" style=" ">
+	<div class="container" style="margin-top:10px;">
 		<div class="row" style=" float: right;  ">
 			<div class="input-group">
 			  <div class="input-group-prepend">
 				<span class="input-group-text" id="">聯絡窗口</span>
 			  </div>
 			   <div class="input-group-prepend">
-				<span class="input-group-text" id="">方珮珊(Susan Fang)  514-17909</span>&nbsp;&nbsp;&nbsp;&nbsp;
+				<span class="input-group-text" id="">方珮珊(Susan Fang)  514-17909 &nbsp;&nbsp; 黃克翔(Kirk Huang) 514-17931&nbsp;&nbsp; 梁均銘(Jacob Liang) 513-65073</span>&nbsp;&nbsp;&nbsp;&nbsp;
 			  </div><!--button type="button" class="btn btn-secondary">使用說明</button-->	
 			</div>		  
 		</div>

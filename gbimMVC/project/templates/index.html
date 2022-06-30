@@ -1,56 +1,102 @@
 {% extends "layout.html" %}
 {% block title %}GBIM{% endblock %}
-<script type="text/javascript"> 
+{% block content %}
+ <script type="text/javascript"> 
 $(document).ready(function() {   
-	 
+	 $("#watermarkId").html('網站建構中');
 });
- 
+ console.log('UserID : '+"{{data['UserID']}}")
 </script>
+ <style> 
+
+ </style>
  
- {% block content %}
-  <div class="row" style="  margin: auto;">	  
+ 
+      <div class="row" style="  margin: auto;">	  
+	  
+	  
+	  
 		 <div class="card text-white bg-success mb-3" style="max-width: 18rem; margin:auto; cursor: pointer;" onclick="location.href='/gbim/smartfr';">
-		  <div class="card-header" style="font-size: 25px;">SMART FR 決策輔助</div>
-		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+		  <div class="card-header" style="font-size: 23px;">SMART FR 決策輔助</div>
+		  <!--div class="card-body bg-white" style="width:286px;height:148px;margin: auto;"-->
+		  <div class="card-body bg-white" style="width:260px;height:148px;margin: auto;">
 			 <img class="card-img center" src="../static/img/decision.png" style="width: 60%;margin-top:-20px;" alt="Card image">
 		  </div>
 		 </div>
 		 
-		 <div class="card text-white bg-success mb-3" style="max-width: 18rem; margin: auto; cursor: pointer;" onclick="location.href='/gbim/areaforecast';">
-		  <div class="card-header" style="font-size: 25px;">全球不良品區域預測</div>
-		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+		 <div class="card text-white bg-success mb-3" style="max-width: 18rem; margin: auto; cursor:pointer;" onclick="location.href='/gbim/areaforecast';">
+		  <div class="card-header" style="font-size: 23px;">全球不良品區域預測</div>
+		  
+		  <div class="card-body bg-white" style="width:260px;height:148px;margin: auto;">
+		     <!--div class="watermark" style="margin-top:85px;margin-left:-15px;">網站建構中</div-->
 			 <img class="card-img center" src="../static/img/map.png" style="width: 60%;margin-top:-20px; " alt="Card image">
+			 
 		  </div>
 		 </div>
 		 
 		 <div class="card text-white bg-success mb-3" style="max-width: 18rem;margin: auto; cursor: pointer;" onclick="location.href='/gbim/recommend';">
-		  <div class="card-header" style="font-size: 25px;">全球備品庫存推薦</div>
-		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+		  <div class="card-header" style="font-size: 23px;">全球備品庫存推薦</div>
+		  <div class="card-body bg-white" style="width:260px;height:148px;margin: auto;">
+		     <!--div class="watermark" style="margin-top:85px;margin-left:-15px;">網站建構中</div--> 
 			 <img class="card-img center" src="../static/img/recommend.png" style="width: 100%;margin-top:-20px;" alt="Card image">
+		  </div>
+		 </div>
+		 
+		 <div class="card text-white bg-success mb-3" style="max-width: 18rem;margin: auto; cursor: pointer;" onclick="location.href='/gbim/alarm';">
+		  <div class="card-header" style="font-size: 23px;">呆滯物料預警</div>
+		  <div class="card-body bg-white" style="width:260px;height:148px;margin: auto;">
+		     <!--div class="watermark" style="margin-top:85px;margin-left:-15px;">網站建構中</div-->
+			 <img class="card-img center" src="../static/img/alarm.jpg" style="width: 50%;margin-top:-10px;" alt="Card image">			 
 		  </div>
 		 </div>
 	  </div> 
 	  
 	  <div class="row" style="  margin: auto;">	 
 		 <div class="card text-white bg-success mb-3" style="max-width: 18rem;margin: auto; cursor: pointer;" onclick="location.href='/gbim/safetystock';">
-		  <div class="card-header" style="font-size: 25px;">維修中心庫存安全量</div>
-		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
-			 <img class="card-img center" src="../static/img/storage.png" style="width: 65%;margin-top:-10px;" alt="Card image">
+		  <div class="card-header" style="font-size: 23px;">維修缺料分析</div>
+		  <div class="card-body bg-white" style="width:260px;height:148px;margin: auto;">
+		     <!--div class="watermark" style="margin-top:85px;margin-left:-15px;">網站建構中</div-->
+			 <img class="card-img center" src="../static/img/storage.png" style="width: 70%;margin-top:-10px;" alt="Card image">
 		  </div>
 		 </div>
 		 
 		 <div class="card text-white bg-warning  mb-3 " style="max-width: 18rem;margin: auto; cursor: pointer;" onclick="location.href='/gbim/audit';">
-		  <div class="card-header" style="font-size: 25px;">檢核機制 </div>
-		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+		  <div class="card-header" style="font-size: 23px;">檢核機制</div>
+		  <div class="card-body bg-white" style="width:260px;height:148px;margin: auto;">
+		     <!--div class="watermark" style="margin-top:85px;margin-left:-15px;">網站建構中</div-->
 			 <img class="card-img center" src="../static/img/check.png" style="width: 50%;" alt="Card image">
 		  </div>
 		 </div>
 		 
 		 <div class="card text-white bg-warning  mb-3" style="max-width: 18rem;margin: auto; cursor: pointer;" onclick="location.href='/gbim/admin';">
-		  <div class="card-header" style="font-size: 25px;">管理者功能</div>		  
-		  <div class="card-body bg-white" style="width:286px;height:148px;margin: auto;">
+		  <div class="card-header" style="font-size: 23px;">管理者功能</div>		  
+		  <div class="card-body bg-white" style="width:260px;height:148px;margin: auto;">
+		     <div class="watermark" style="margin-top:85px;margin-left:-15px;">網站建構中</div>
 			 <img class="card-img center" src="../static/img/dashboard.png" style="width: 90%;margin-top:-10px;" alt="Card image">
 		  </div>
 		 </div>
+		 
+		 <div class="card text-white bg-info  mb-3" style="max-width: 18rem;margin: auto; cursor: ;" onclick=" ">
+		  <div class="card-header" style="font-size: 23px;">整機</div>		  
+		  <div class="card-body bg-white" style="width:260px;height:148px;margin: auto;">
+		      <div class="row" style="  ">
+			  
+		      <div class="dropdown" style="margin-left:px;">
+				  <button class="btn btn-primary dropdown-toggle btn-lg" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					備品
+				  </button>
+				  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+					<a class="dropdown-item" href="/gbim/set_forecast">Forecast</a>
+					<a class="dropdown-item" href="/gbim/set_audit">檢核</a>
+					<a class="dropdown-item" href="/gbim/ftp_rpt">FTP報表</a>
+				  </div>
+			  </div>
+			  <button type="button" class="btn  btn-lg" onclick="location.href='/gbim/set_material';" style="margin-left:130px;background-color:#A569BD;color:white;width:110px;position: absolute;">料件</button>
+			  </div> 	
+		     <!--div class="watermark" style="margin-top:85px;margin-left:-15px;">網站建構中</div-->
+			 <!--img class="card-img center" src="../static/img/tv_set.jpg" style="width: 80%;margin-top:-10px;" alt="Card image"-->
+		  </div>
+		 </div>
+		 
       </div>
 {% endblock %}

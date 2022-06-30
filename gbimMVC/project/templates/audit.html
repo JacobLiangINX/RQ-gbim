@@ -1,15 +1,149 @@
 {% extends "layout.html" %}
 {% block title %}SMART FR{% endblock %}
-<script type="text/javascript"> 
+{% block content %}
+<style> 
+table.dataTable thead .sorting:after,
+table.dataTable thead .sorting:before,
+table.dataTable thead .sorting_asc:after,
+table.dataTable thead .sorting_asc:before,
+table.dataTable thead .sorting_asc_disabled:after,
+table.dataTable thead .sorting_asc_disabled:before,
+table.dataTable thead .sorting_desc:after,
+table.dataTable thead .sorting_desc:before,
+table.dataTable thead .sorting_desc_disabled:after,
+table.dataTable thead .sorting_desc_disabled:before {
+bottom: .5em;
+}      
+</style>
+  <div class="row" style="margin: auto; ">
+     <table class="table table-bordered">
+	  <thead>
+		<tr>
+		  <th scope="col">創建日期</th>
+		  <th scope="col">項目</th>
+		  <th scope="col">準確率</th>
+		  <th scope="col">最小包裝數準確率</th>
+		  <th scope="col">準確率(扣除波動大資料)</th>
+		  <th scope="col">最小包裝數準確率(扣除波動大資料)</th>
+		</tr>
+	  </thead>
+	  <tbody>
+	    {% for i in data['outfile_acc_list'] %} 
+		<tr>
+		  <th rowspan="5" scope="row">{{ data['outfile_acc_list'][i]['yyyymm'] }}</th> 
+		</tr>
+		<tr>
+		  <th scope="row">筆數</th>
+		  <td>{{ data['outfile_acc_list'][i]['qty1'] }}</td>
+		  <td>{{ data['outfile_acc_list'][i]['qty2'] }}</td>
+		  <td>{{ data['outfile_acc_list'][i]['qty3'] }}</td>
+		  <td>{{ data['outfile_acc_list'][i]['qty4'] }}</td>
+		</tr>
+		<tr>
+		  <th scope="row">Total Accurate</th>
+		  <td>{{ data['outfile_acc_list'][i]['ta1'] }}%</td>
+		  <td>{{ data['outfile_acc_list'][i]['ta2'] }}%</td>
+		  <td>{{ data['outfile_acc_list'][i]['ta3'] }}%</td>
+		  <td>{{ data['outfile_acc_list'][i]['ta4'] }}%</td>
+		</tr>
+		<tr>
+		  <th scope="row">Over Estimate Percentage</th>
+		  <td>{{ data['outfile_acc_list'][i]['oes1'] }}%</td>
+		  <td>{{ data['outfile_acc_list'][i]['oes2'] }}%</td>
+		  <td>{{ data['outfile_acc_list'][i]['oes3'] }}%</td>
+		  <td>{{ data['outfile_acc_list'][i]['oes4'] }}%</td>
+		</tr>
+		<tr>
+		  <th scope="row">Under Estimate Percentage</th>
+		  <td>{{ data['outfile_acc_list'][i]['ues1'] }}%</td>
+		  <td>{{ data['outfile_acc_list'][i]['ues2'] }}%</td>
+		  <td>{{ data['outfile_acc_list'][i]['ues3'] }}%</td>
+		  <td>{{ data['outfile_acc_list'][i]['ues4'] }}%</td>
+		</tr>
+		{% endfor %}
+	  </tbody>
+	</table>
+  </div>
+
+  <div class="row" style="margin: auto;margin-top:30px; ">
+    <div class="col">
+      <button type="button" class="btn btn-secondary" onclick="sendFile();">查詢結果寄信</button>
+    </div>
+  </div>
+  <div class="row" style="margin: auto; margin-top:10px;">
+    <table id="audit_1" class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
+	  <thead>
+		<tr>
+		  <th class="th-sm">資料區間</th>
+		  <th class="th-sm">MODEL NAME</th>
+		  <th class="th-sm">ISSUE DATA</th>
+		  <th class="th-sm">Smart FR</th>
+		  <th class="th-sm">差異</th>
+		  <th class="th-sm">差異百分比</th>
+		  <th class="th-sm">差異百分比 絕對值</th>
+		</tr>
+	  </thead>
+	  <tbody id="issue_date_list">
+	  {% for i in data['issue_date_list'] %} 
+	    <tr>
+		  <td>{{ data['from_end'] }}</td>
+		  <td>{{ data['issue_date_list'][i]['model_name'] }}</td>
+		  <td>{{ data['issue_date_list'][i]['qty'] }}</td>
+		  <td>{{ data['issue_date_list'][i]['predict_qty'] }}</td>
+		  <td>{{ data['issue_date_list'][i]['difference'] }}</td>
+		  <td>{{ data['issue_date_list'][i]['percent'] }}</td>
+		  <td>{{ data['issue_date_list'][i]['percent_abs'] }}</td>
+		</tr>    
+      {% endfor %}
+	  </tbody>
+	</table> 
+  </div> 
+  <div class="row" style="  margin: auto;">
+    
+  </div> 
+<script type="text/javascript">
+var ajaxUrlPort = '10.55.14.209:30083/gbim/'
+function decodeHtml(html) {
+    var txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+}
+
+//console.log("{{data['issue_date_list']}}")
+//console.log(decodeHtml("{{data['issue_date_list']}}").replace(/'/g, '"'))
+var issue_date_list = JSON.parse(decodeHtml("{{data['issue_date_list']}}").replace(/'/g, '"'));
+console.log('issue_date_list:')
+console.log(issue_date_list)
+var outfile_acc_list = JSON.parse(decodeHtml("{{data['outfile_acc_list']}}").replace(/'/g, '"'));
+console.log('outfile_acc_list:')
+console.log(outfile_acc_list)
+//var issue_date_list = JSON.parse( "{{data['issue_date_list']}}".replace(/'/g, '"')  );
+
+
+function sendFile(){  
+	$.ajax({
+		url: "http://"+ajaxUrlPort+"/sendFile_audit",
+		type: "GET",
+		dataType: 'json',
+		//data:{ CREATE_YM:CREATE_YM, product_id:product_id, rc_id:rc_id},
+		contentType: "application/json; charset=utf-8",
+		success: function (data) { 
+			alert('資料筆數:'+data['size']+' 已經寄到'+data['UserID']+"@innolux.com")			
+			console.log(data)
+		},
+		error: function(xhr) {
+		  alert('sendFile 發生錯誤:'+JSON.stringify(xhr)); 
+		}
+	});
+}
 $(document).ready(function() {   
-	 
+	$('#audit_1').DataTable({
+	  "Sorting": [],
+	  columnDefs: [{
+	  orderable: false 
+	  }]
+	}); 
 });
  
 </script>
- 
-{% block content %}
-  <div class="row" style="  margin: auto;">	  
-  </div> 
-  <div class="row" style="  margin: auto;">	  
-  </div> 
 {% endblock %}

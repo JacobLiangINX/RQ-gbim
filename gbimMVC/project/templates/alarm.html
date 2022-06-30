@@ -1,0 +1,256 @@
+{% extends "layout.html" %}
+{% block title %}全球維修中心維修物料預警{% endblock %}
+{% block content %}
+<style>
+html, body, #main {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+}
+
+#chartdiv {
+  width: 100%;
+  height: 400px; 
+} 
+table.dataTable thead .sorting:after,
+table.dataTable thead .sorting:before,
+table.dataTable thead .sorting_asc:after,
+table.dataTable thead .sorting_asc:before,
+table.dataTable thead .sorting_asc_disabled:after,
+table.dataTable thead .sorting_asc_disabled:before,
+table.dataTable thead .sorting_desc:after,
+table.dataTable thead .sorting_desc:before,
+table.dataTable thead .sorting_desc_disabled:after,
+table.dataTable thead .sorting_desc_disabled:before {
+bottom: .5em;
+}
+</style>
+<script src="../static/js/simpleRequire.js"></script>
+<script src="../static/js/config.js"></script>
+  <div class="row" style="  margin: auto;margin-top:-10px;">
+    <div class="col-md-12" style="text-align: right;">
+	  <span style='margin-left:75%;'>1. 庫齡大於240天&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>2. 新版FCST已無需求<br><br>總金額: {{ data['TOTAL_PRICE_TWD_total'] }} NTD
+</span>
+      <div id="chartdiv" style="margin-top:-50px;"></div>  
+	</div>   
+  </div> 
+  <div class="row" style="margin-top:20px;">
+    <div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="RC ID" id="rc_id">
+    </div>
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="PART NAME" id="mg_name_m">
+    </div>
+	<div class="col">
+      <button type="button" class="btn btn-secondary" onclick="download();">查詢結果下載</button>
+    </div>
+  </div>
+  <div class="row" style="margin-top:20px;">
+    <table id="aging" class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
+	  <thead>
+		<tr> 
+		  <th class="th-sm">RC_ID</th>
+		  <th class="th-sm">PART_NAME</th>
+		  <th class="th-sm">PART NUMBER</th>
+		  <th class="th-sm">報廢數量</th>
+		  <th class="th-sm">報廢金額NTD</th>
+		</tr>
+	  </thead>
+	  <tbody id="aging_list">
+	  {% for i in data['aging_list'] %} 
+	    <tr>
+		  <td>{{ data['aging_list'][i]['rc_id'] }}</td>
+		  <td>{{ data['aging_list'][i]['mg_name_m'] }}</td>
+		  <td>{{ data['aging_list'][i]['part_no'] }}</td>
+		  <td>{{ data['aging_list'][i]['qty'] }}</td>
+		  <td>{{ data['aging_list'][i]['total_price_twd'] }}</td>
+		</tr>    
+      {% endfor %}
+	  </tbody>
+	</table>  
+  </div>
+
+<script type="text/javascript">
+var ajaxUrlPort = '10.55.14.209:30083/gbim/' 
+function separator(numb) {
+    var str = numb.toString().split(".");
+    str[0] = str[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return str.join(".");
+} 
+function download(){    
+    var url = '/gbim/download';
+	var form = $('<form action="' + url + '" method="post">' +
+	  '<input type="text" name="filename" value="TBU_RQM_PARTS_DAILY_AGING.xlsx" />' +
+	  '<input type="text" name="rc_id" value="'+$("#rc_id").val().trim()+'" />' +
+	  '<input type="text" name="mg_name_m" value="'+$("#mg_name_m").val().trim()+'" />' +
+	  '</form>');
+	$('body').append(form);
+	form.submit(); 
+}
+function filter(){
+	filter_dict = [];
+	 
+	if($("#rc_id").val().trim() != ''){
+		filter_dict.push({key:"rc_id",value:$("#rc_id").val().trim()})
+	}
+	if($("#mg_name_m").val().trim() != ''){
+		filter_dict.push({key:"mg_name_m",value:$("#mg_name_m").val().trim()})
+	}	
+	tmp = [];
+	for(i in aging_list){
+		accept = 1;
+		for(f in filter_dict){		
+			key = filter_dict[f]["key"];
+			value = filter_dict[f]["value"];			
+			if(aging_list[i][key] != value){
+				accept = 0;
+			}
+		}
+		if(accept == 1){
+			tmp.push(aging_list[i])
+		}
+	}
+	var table = $('#aging').DataTable();
+	table.clear().draw();
+	table.destroy(); 
+	
+	html_string = ''
+	for(i in tmp){
+		html_string = html_string+'<tr><td>'+tmp[i]['rc_id']+'</td>'
+		+'<td>'+tmp[i]['mg_name_m']+'</td>'		
+		+'<td>'+tmp[i]['part_no']+'</td>'
+		+'<td>'+tmp[i]['qty']+'</td>'
+		+'<td>'+tmp[i]['total_price_twd']+'</td></tr>'  
+	} 
+		  
+	$("#aging_list").html(html_string)
+	 
+	$('#aging').DataTable({
+		  "Sorting": [],
+		  columnDefs: [{
+		  orderable: false 
+		  }]
+		}); 
+}
+function decodeHtml(html) {
+    var txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+}
+var part_name_list = JSON.parse(decodeHtml("{{data['part_name_list']}}").replace(/'/g, '"')) 
+var aging_list = JSON.parse(decodeHtml("{{data['aging_list']}}").replace(/'/g, '"')) 
+var series = JSON.parse(decodeHtml("{{data['series']}}").replace(/'/g, '"')) 
+ 
+console.log('part_name_list:')
+console.log(part_name_list)
+console.log('aging_list:')
+console.log(aging_list)
+console.log('series:')
+console.log(series)
+/*
+series[4]['label']={
+            normal: {
+                show: true,
+                position: 'top',
+                formatter: function(params) {
+                        let val=0;
+                        this.option.series.forEach(s => { 
+                            val+=s.data[params.dataIndex];
+                        } );
+                        return val;
+                    }
+            }
+        }*/
+sum = []
+
+for(j in series[0]['data']){
+	sum[j] = 0
+}
+
+for(i in series){
+	for(j in series[i]['data']){
+		sum[j] = sum[j] + series[i]['data'][j]
+	}
+	series[i]['label'] = {				 
+					normal : {
+						show: true,								 
+						formatter:function(a) {value = a.value; if(value<2000) return ''; let str = value.toString(); let reg = str.indexOf(".") > -1 ? /(\d)(?=(\d{3})+\.)/g : /(\d)(?=(?:\d{3})+$)/g; return str.replace(reg,"$1,");
+						}
+					}
+				}
+}
+console.log('series:')
+console.log(series)
+console.log('sum:')
+console.log(sum)
+
+series[4]['markPoint']={
+		data: []
+      }
+for(j in series[0]['data']){
+	console.log('j:'+j)
+	//series[4]['markPoint']['data'] = []
+	series[4]['markPoint']['data'].push({coord: [parseInt(j), sum[j]+100], value:sum[j]})
+}
+
+/*
+label: {				 
+					normal : {
+						show: show,								 
+						formatter:function(a) {value = a.value; if(!value&&value!==0) return 0; let str = value.toString(); let reg = str.indexOf(".") > -1 ? /(\d)(?=(\d{3})+\.)/g : /(\d)(?=(?:\d{3})+$)/g; return str.replace(reg,"$1,");
+						}
+					}
+			  }
+*/
+console.log(series)
+$(document).ready(function() {   
+	$('#aging').DataTable({
+    "Sorting": [],
+    columnDefs: [{
+      orderable: false 
+    }]
+  });  
+  
+  $(".search_keyword").change(function(){
+	filter();
+	}); 
+	 
+	 
+});
+
+
+require(['echarts'], function (echarts) {
+var chart = echarts.init(document.getElementById('chartdiv'));
+ 
+chart.setOption( option =  { 
+   
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: {
+      // Use axis to trigger tooltip
+      type: 'shadow' // 'shadow' as default; can also be 'line' or 'shadow'
+    }
+  }, 
+  legend: {},
+  grid: {
+    left: '3%',
+    right: '4%',
+    bottom: '3%',
+    containLabel: true
+  },
+  xAxis: {
+    type: 'category',
+    data: part_name_list
+  },
+  yAxis: {
+    name: 'NTD',
+    type: 'value'
+  },
+  series: series 
+});
+ 
+
+})
+
+</script>  
+{% endblock %}

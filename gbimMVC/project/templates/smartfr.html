@@ -2,161 +2,336 @@
 {% block title %}SMART FR{% endblock %} 
 {% block content %}
 <style>
+html, body, #main {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+}
+
 #chartdiv {
-  width: 100%;
-  height: 500px;
+  width: 110%;
+  height: 470px; 
 }
 #chartdiv2 {
   width: 100%;
-  height: 500px;
+  height: 470px;
+}
+table.dataTable thead .sorting:after,
+table.dataTable thead .sorting:before,
+table.dataTable thead .sorting_asc:after,
+table.dataTable thead .sorting_asc:before,
+table.dataTable thead .sorting_asc_disabled:after,
+table.dataTable thead .sorting_asc_disabled:before,
+table.dataTable thead .sorting_desc:after,
+table.dataTable thead .sorting_desc:before,
+table.dataTable thead .sorting_desc_disabled:after,
+table.dataTable thead .sorting_desc_disabled:before {
+bottom: .5em;
 }
 </style>
+ 
+<!--link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"-->
+
+<!--link rel="stylesheet" href="https://mdbcdn.b-cdn.net/wp-content/themes/mdbootstrap4/docs-app/css/dist/mdb5/plugins/all.min.css"-->
+<!--link rel='stylesheet' id='roboto-subset.css-css'  href='https://mdbcdn.b-cdn.net/wp-content/themes/mdbootstrap4/docs-app/css/mdb5/fonts/roboto-subset.css?ver=3.9.0-update.5' type='text/css' media='all' /-->
+ 
 <script type="text/javascript"> 
-
-
+console.log('UserID : '+"{{data['UserID']}}")
 smart_fr_predict = "{{data['smart_fr_predict']}}"
+var ajaxUrlPort = '10.55.14.209:30083/gbim/' 
 //console.log("{{data['smart_fr_predict']}}")
-console.log(smart_fr_predict)
+//console.log(smart_fr_predict)
 
-
-$(document).ready(function() {   
-	 
- am5.ready(function() {
-
-// Create root element
-// https://www.amcharts.com/docs/v5/getting-started/#Root_element
-var root = am5.Root.new("chartdiv");
-
-
-// Set themes
-// https://www.amcharts.com/docs/v5/concepts/themes/
-root.setThemes([
-  am5themes_Animated.new(root)
-]);
-
-
-// Create chart
-// https://www.amcharts.com/docs/v5/charts/xy-chart/
-var chart = root.container.children.push(am5xy.XYChart.new(root, {
-  panX: false,
-  panY: false,
-  wheelX: "panX",
-  wheelY: "zoomX",
-  layout: root.verticalLayout
-}));
-// Add scrollbar
-// https://www.amcharts.com/docs/v5/charts/xy-chart/scrollbars/
-
-
-chart.set("scrollbarX", am5.Scrollbar.new(root, {
-  orientation: "horizontal"
-}));
-var data = [];
-
-{% for smart in data['smart_fr_predict'] %} 
-	data.push({"year":"{{data['smart_fr_predict'][smart]['YYYYMM']}}", 
-	"FR-MP":{{data['smart_fr_predict'][smart]['FR-MP']}},
-	"FR-EOL":{{data['smart_fr_predict'][smart]['FR-EOL']}},
-	"LR-MP":{{data['smart_fr_predict'][smart]['LR-MP']}},
-	"LR-EOL":{{data['smart_fr_predict'][smart]['LR-EOL']}}})
-     
+var smart_fr_list = [];
+{% for i in data['smart_fr_list'] %} 
+	smart_fr_list.push({"customer":"{{data['smart_fr_list'][i]['customer']}}", 
+		"application":"{{data['smart_fr_list'][i]['application']}}",
+		"model_name":"{{data['smart_fr_list'][i]['model_name']}}",
+		"product_id":"{{data['smart_fr_list'][i]['product_id']}}",
+		"predict_qty":"{{data['smart_fr_list'][i]['predict_qty']}}",
+		"warranty_fulfill":"{{data['smart_fr_list'][i]['warranty_fulfill']}}",
+		"status":"{{data['smart_fr_list'][i]['status']}}",
+		"warranty_len":{{data['smart_fr_list'][i]['warranty_len']}},
+		"yyyymm":"{{data['smart_fr_list'][i]['yyyymm']}}"
+		}) 
 {% endfor %}
-console.log('data:')
-console.log(data) 
 
-// Create axes
-// https://www.amcharts.com/docs/v5/charts/xy-chart/axes/
-var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
-  categoryField: "year",
-  renderer: am5xy.AxisRendererX.new(root, {}),
-  tooltip: am5.Tooltip.new(root, {})
-}));
-
-xAxis.data.setAll(data);
-
-var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
-  min: 0,
-  renderer: am5xy.AxisRendererY.new(root, {})
-}));
-
-
-// Add legend
-// https://www.amcharts.com/docs/v5/charts/xy-chart/legend-xy-series/
-var legend = chart.children.push(am5.Legend.new(root, {
-  centerX: am5.p50,
-  x: am5.p50
-}));
-
-
-// Add series
-// https://www.amcharts.com/docs/v5/charts/xy-chart/series/
-function makeSeries(name, fieldName) {
-  var series = chart.series.push(am5xy.ColumnSeries.new(root, {
-    name: name,
-    stacked: true,
-    xAxis: xAxis,
-    yAxis: yAxis,
-    valueYField: fieldName,
-    categoryXField: "year"
-  }));
-
-  series.columns.template.setAll({
-    tooltipText: "{name}, {categoryX}: {valueY}",
-    tooltipY: am5.percent(10)
-  });
-  series.data.setAll(data);
-
-  // Make stuff animate on load
-  // https://www.amcharts.com/docs/v5/concepts/animations/
-  series.appear();
-
-  series.bullets.push(function () {
-    return am5.Bullet.new(root, {
-      sprite: am5.Label.new(root, {
-        text: "{valueY}",
-        fill: root.interfaceColors.get("alternativeText"),
-        centerY: am5.p50,
-        centerX: am5.p50,
-        populateText: true
-      })
-    });
-  });
-
-  legend.data.push(series);
+//console.log('smart_fr_list:')
+//console.log(smart_fr_list) 
+function filter(){
+	filter_dict = [];
+	if($("#customer").val().trim() != ''){
+		filter_dict.push({key:"customer",value:$("#customer").val().trim()})
+		//filter_dict.push({"customer":$("#customer").val().trim()})
+	}
+	if($("#model_name").val().trim() != ''){
+		filter_dict.push({key:"model_name",value:$("#model_name").val().trim()})
+		//filter_dict.push({"model_name":$("#model_name").val().trim()})
+	}
+	if($("#product_id").val().trim() != ''){
+		filter_dict.push({key:"product_id",value:$("#product_id").val().trim()})
+	}
+	if($("#status").val().trim() != ''){
+		filter_dict.push({key:"status",value:$("#status").val().trim()})
+	}
+	//if($("#yyyymm").val().trim() != ''){
+	//	filter_dict.push({key:"yyyymm",value:$("#yyyymm").val().trim()})
+	//}	
+	
+	tmp = [];
+	for(i in smart_fr_list){
+		//tmp
+		accept = 1;
+		for(f in filter_dict){		
+			key = filter_dict[f]["key"];
+			value = filter_dict[f]["value"];			
+			if(smart_fr_list[i][key] != value){
+				accept = 0;
+			}
+		}
+		if(accept == 1){
+			tmp.push(smart_fr_list[i])
+		}
+	}
+	console.log(tmp)
+	
+	var table = $('#smart_fr').DataTable();
+	table.clear().draw();
+	table.destroy();
+	//table.clear();
+	
+	html_string = ''
+	for(i in tmp){
+		html_string = html_string+'<tr><td>'+tmp[i]['yyyymm']+'</td>'
+		+'<td>'+tmp[i]['customer']+'</td>'
+		+'<td>'+tmp[i]['application']+'</td>'
+		+'<td>'+tmp[i]['model_name']+'</td>'
+		+'<td>'+tmp[i]['product_id']+'</td>'
+		+'<td>'+tmp[i]['predict_qty']+'</td>'
+		+'<td>'+tmp[i]['warranty_fulfill']+'</td>'
+		+'<td>'+tmp[i]['status']+'</td>'
+		+'<td>'+tmp[i]['warranty_len']+'</td></tr>'
+	}
+	$("#smart_fr_list").html(html_string)
+	 
+	$('#smart_fr').DataTable({
+		  "Sorting": [],
+		  columnDefs: [{
+		  orderable: false 
+		  }]
+		}); 
 }
 
-makeSeries("FR-EOL", "FR-EOL");
-makeSeries("FR-MP", "FR-MP");
-makeSeries("LR-EOL", "LR-EOL"); 
-makeSeries("LR-MP", "LR-MP"); 
-// Make stuff animate on load
-// https://www.amcharts.com/docs/v5/concepts/animations/
-chart.appear(1000, 100);
+function sendFile(){
+	yyyymm = $("#yyyymm").val().trim()
+	customer = $("#customer").val().trim()
+	model_name = $("#model_name").val().trim()
+	product_id = $("#product_id").val().trim()
+	status = $("#status").val().trim()
+	console.log('yyyymm:'+yyyymm+',customer:'+customer+',model_name:'+model_name+',product_id:'+product_id+',status:'+status)
 
+	//confirm("Press a button!") 
+	$.ajax({
+		url: "http://"+ajaxUrlPort+"/sendFile_smartfr",
+		type: "GET",
+		dataType: 'json',
+		data:{ yyyymm:yyyymm, customer:customer, model_name:model_name, product_id:product_id, status:status},
+		contentType: "application/json; charset=utf-8",
+		success: function (data) { 
+			alert('資料筆數:'+data['size']+' 已經寄到'+data['UserID']+"@innolux.com")
+			
+			console.log(data)
+		},
+		error: function(xhr) {
+		  alert('sendFile 發生錯誤:'+JSON.stringify(xhr)); 
+		}
+	});	
+}
 
+$(document).ready(function() {   
+	$("#yyyymm").val("{{data['yyyymm']}}"); 
+	$(".search_keyword").change(function(){
+		  filter();
+	});
+	
+	$('#yyyymm').on('change', function (e) {
+		var optionSelected = $("option:selected", this);
+		var valueSelected = this.value;
+		var url = '/gbim/smartfr';
+		var form = $('<form action="' + url + '" method="post">' +
+		  '<input type="text" name="yyyymm" value="' + valueSelected + '" />' +
+		  '</form>');
+		$('body').append(form);
+		form.submit();
+	});	
 
+	
+	am5.ready(function() { 
+	var root = am5.Root.new("chartdiv"); 
+	root.setThemes([
+	  am5themes_Animated.new(root)
+	]); 
+	var chart = root.container.children.push(am5xy.XYChart.new(root, {
+	  panX: false,
+	  panY: false,
+	  wheelX: "panX",
+	  wheelY: "zoomX",
+	  layout: root.verticalLayout
+	})); 
+	chart.set("scrollbarX", am5.Scrollbar.new(root, {
+	  orientation: "horizontal"
+	}));
+	var data = [];
 
-}); // end am5.ready()
+	{% for smart in data['smart_fr_predict'] %} 
+		data.push({"year":"{{data['smart_fr_predict'][smart]['YYYYMM']}}", 
+		"FR-MP":{{data['smart_fr_predict'][smart]['FR-MP']}},
+		"FR-EOL":{{data['smart_fr_predict'][smart]['FR-EOL']}},
+		"LR-MP":{{data['smart_fr_predict'][smart]['LR-MP']}},
+		"LR-EOL":{{data['smart_fr_predict'][smart]['LR-EOL']}}})
+		 
+	{% endfor %}
+	console.log('data:')
+	console.log(data) 
+	var xRenderer = am5xy.AxisRendererX.new(root, { minGridDistance: 0 });
+	xRenderer.labels.template.setAll({
+	  rotation: -30,
+	  centerY: am5.p5,
+	  centerX: am5.p100,
+	  paddingRight: 0
+	}); 
+	var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+	  categoryField: "year",
+	  renderer: xRenderer, 
+	  tooltip: am5.Tooltip.new(root, {})
+	}));
+
+	xAxis.data.setAll(data);
+
+	var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+	  min: 0,
+	  renderer: am5xy.AxisRendererY.new(root, {})
+	}));
+ 
+	var legend = chart.children.push(am5.Legend.new(root, {
+	  centerX: am5.p50,
+	  x: am5.p50
+	}));
+ 
+	function makeSeries(name, fieldName) {
+	  var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+		name: name,
+		stacked: true,
+		xAxis: xAxis,
+		yAxis: yAxis,
+		valueYField: fieldName,
+		categoryXField: "year"
+	  }));
+
+	  series.columns.template.setAll({
+		tooltipText: "{name}, {categoryX}: {valueY}",
+		tooltipY: am5.percent(10)
+	  });
+	  series.data.setAll(data); 
+	  series.appear();
+
+	  series.bullets.push(function () {
+		return am5.Bullet.new(root, {
+		  sprite: am5.Label.new(root, {
+			text: "{valueY}",
+			fill: root.interfaceColors.get("alternativeText"),
+			centerY: am5.p50,
+			centerX: am5.p50,
+			populateText: true
+		  })
+		});
+	  });
+	  legend.data.push(series);
+	}
+
+	makeSeries("FR-EOL", "FR-EOL");
+	makeSeries("FR-MP", "FR-MP");
+	makeSeries("LR-EOL", "LR-EOL"); 
+	makeSeries("LR-MP", "LR-MP");  
+	chart.appear(1000, 100);
+
+	});  
+ $('#smart_fr').DataTable({
+  "Sorting": [],
+  columnDefs: [{
+  orderable: false 
+  }]
+}); 
 
 });
- 
- 
-</script>
-	 
-  <div class="row" style="  margin: auto;">	 
-    <div class="col-md-6" style="">
-      <div id="chartdiv"></div>  
+
+</script>	 
+  <div class="row" style="margin: auto;margin-top:-30px;">
+    <div class="col-md-6" >
+      <div id="chartdiv" style=" "></div>  
 	</div>  
-	<div class="col-md-6" style="">
+	<div class="col-md-6" style=" ">
       <div id="chartdiv2"></div>  
 	</div>  
-	<!--div class="col-md-4" style="">
-      <div id=""></div>  
-	</div-->  
   </div> 
-  <div class="row" style="  margin: auto;">	  
+  <div class="row" style="margin-top:20px;">	 
+	<div class="col">
+      <!--input type="text" class="form-control search_keyword" placeholder="更新月份，例:202201" id="yyyymm"-->
+	<select class="form-select" aria-label="Default select example" id="yyyymm">
+	  {% for ym in data['ym_list']|sort(reverse=True)  %}
+	  <option value="{{ ym }}">{{ ym }}</option>
+	  {% endfor %}	  
+	</select>
+	  
+    </div>	
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="CUSTOMER" id="customer">
+    </div>
+    <div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="MODEL NAME" id="model_name">
+    </div>
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="PRODUCT ID" id="product_id">
+    </div>
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="FAILURE STAGE" id="status">
+    </div>
+	<div class="col">
+      <button type="button" class="btn btn-secondary" onclick="sendFile();">查詢結果寄信</button>
+    </div>
   </div>
-
+  <div class="row" style="margin-top:20px;">
+    <table id="smart_fr" class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
+	  <thead>
+		<tr>
+		  <th class="th-sm">Smart FR更新月份</th>
+		  <th class="th-sm">CUSTOMER</th>
+		  <th class="th-sm">APPLICATION</th>
+		  <th class="th-sm">MODEL NAME</th>
+		  <th class="th-sm">PRODUCT ID</th>
+		  <th class="th-sm">PREDICT QTY</th>
+		  <th class="th-sm">是否為保固期備滿</th>
+		  <th class="th-sm">FAILURE STAGE</th>
+		  <th class="th-sm">保固期</th>		  
+		</tr>
+	  </thead>
+	  <tbody id="smart_fr_list">
+	  {% for i in data['smart_fr_list'] %} 
+	    <tr>
+		  <td>{{ data['smart_fr_list'][i]['yyyymm'] }}</td>
+		  <td>{{ data['smart_fr_list'][i]['customer'] }}</td>
+		  <td>{{ data['smart_fr_list'][i]['application'] }}</td>
+		  <td>{{ data['smart_fr_list'][i]['model_name'] }}</td>
+		  <td>{{ data['smart_fr_list'][i]['product_id'] }}</td>
+		  <td>{{ data['smart_fr_list'][i]['predict_qty'] }}</td>
+		  <td>{{ data['smart_fr_list'][i]['warranty_fulfill'] }}</td>
+		  <td>{{ data['smart_fr_list'][i]['status'] }}</td>
+		  <td>{{ data['smart_fr_list'][i]['warranty_len'] }}</td>		  
+		</tr>    
+      {% endfor %}
+	  </tbody>
+	</table>  
+  </div>
 <script>
 am5.ready(function() {
 

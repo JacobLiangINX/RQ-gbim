@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+{% block title %}SMART FR{% endblock %} 
+{% block content %}
+<link rel="stylesheet" href="../static/css/daterangepicker.css"/>
+<link rel="stylesheet" href="../static/css/font-awesome.min.css"/>
+<script src="../static/js/moment.min.js"></script> 
+<script src="../static/js/daterangepicker.js"></script> 
+
+  <div class="row" style="  margin: auto;">
+    <div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="日期區間" id="SEND_DATE">
+    </div>
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="報表來源" id="">
+    </div>
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="SR Type" id="">
+    </div>
+	<div class="col">
+      <button type="button" class="btn btn-secondary" onclick="download();">查詢結果下載</button>
+    </div>
+  </div> 
+  <div class="row" style="  margin: auto;">	  
+  </div> 
+  
+
+<script type="text/javascript"> 
+$(document).ready(function() {   
+	$("#SEND_DATE").daterangepicker({
+      //singleDatePicker: true,
+      minYear: 2018,
+      minMonth: 8,
+      //timePicker: true,
+      minDate: new Date("2021-08-02").toISOString(),
+      maxDate: moment().subtract(1, "days"),
+      startDate: moment().subtract(7, "days"),
+      endDate: moment(),
+      locale: {
+        format: "Y/MM/DD",
+      },
+    });
+	$("#SEND_DATE").change(function () {
+      //alert($("#reservation").val());
+      //search();
+    });
+});
+
+function decodeHtml(html) {
+    var txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+}
+function download(){
+    dateTmp = $("#SEND_DATE").val().split(" - ");
+    startDate = dateTmp[0];
+    endDate = dateTmp[1];
+	//alert('startDate:'+startDate+' , endDate:'+endDate)
+    var url = '/gbim/download';
+	var form = $('<form action="' + url + '" method="post" style="display:none">' +
+	  '<input type="text" name="filename" value="VIZIO_FTP_RAW_DATA.xlsx" />' +
+	  '<input type="text" name="startDate" value="'+startDate+'" />' +
+	  '<input type="text" name="endDate" value="'+endDate+'" />' +
+	  '</form>');
+	$('body').append(form);
+	form.submit(); 
+} 
+</script>  
+{% endblock %}

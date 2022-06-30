@@ -1,15 +1,491 @@
 {% extends "layout.html" %}
 {% block title %}SMART FR{% endblock %}
-<script type="text/javascript"> 
-$(document).ready(function() {   
-	 
-});
- 
-</script>
- 
 {% block content %}
-  <div class="row" style="  margin: auto;">	  
+<style>
+html, body, #main {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+}
+
+#chartdiv {
+  width: 100%;
+  height: 540px; 
+} 
+table.dataTable thead .sorting:after,
+table.dataTable thead .sorting:before,
+table.dataTable thead .sorting_asc:after,
+table.dataTable thead .sorting_asc:before,
+table.dataTable thead .sorting_asc_disabled:after,
+table.dataTable thead .sorting_asc_disabled:before,
+table.dataTable thead .sorting_desc:after,
+table.dataTable thead .sorting_desc:before,
+table.dataTable thead .sorting_desc_disabled:after,
+table.dataTable thead .sorting_desc_disabled:before {
+bottom: .5em;
+}
+</style>
+<script src="../static/js/simpleRequire.js"></script>
+<script src="../static/js/config.js"></script>
+  <div class="row" style="margin: auto;margin-top:30px;">
+    <div class="col-md-12" >
+      <div id="chartdiv" style="margin-left:0px;margin-top:-10px; "></div>  
+	</div>
+  </div>
+  <div class="row" style="margin-top:20px;">	 
+	<div class="col">
+      <!--input type="text" class="form-control search_keyword" placeholder="更新月份，例:202201" id="yyyymm"-->
+	<select class="form-select search_keyword" aria-label="Default select example" id="create_ym">
+	  <option value="ALL">ALL</option>
+	  {% for ym in data['ym_list']|sort(reverse=True)  %}
+	  <option value="{{ ym }}">{{ ym }}</option>
+	  {% endfor %}	  
+	</select>
+	  
+    </div>	
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="RC ID" id="rc_id">
+    </div> 
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="PART NAME" id="part_name">
+    </div>
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="PLANT" id="plant">
+    </div>
+	<div class="col">
+      <button type="button" class="btn btn-secondary" onclick="download();">查詢結果下載</button>
+    </div>
+  </div>
+   
+  <div class="row" style="margin-top:20px;">
+    <table id="adjust_forecast" class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
+	  <thead>
+		<tr>
+		  <th class="th-sm">年月</th>
+		  <th class="th-sm">RC_ID</th>
+		  <th class="th-sm">PART_NAME</th>
+		  <th class="th-sm">PRODUCT ID</th>
+		  <th class="th-sm">調撥數量</th>
+		  <th class="th-sm">Plant</th>
+		  <th class="th-sm">需提貨料號</th>
+		  <th class="th-sm">Adjust Forecast</th>
+		  <th class="th-sm">Adjust Forecast(上個月)</th>
+		  <th class="th-sm">與上個月差額</th>
+		  <th class="th-sm">差額比例</th>		  
+		</tr>
+	  </thead>
+	  <tbody id="adjust_forecast_list">
+	  {% for i in data['adjust_forecast_list'] %} 
+	    <tr>
+		  <td>{{ data['adjust_forecast_list'][i]['create_ym'] }}</td>
+		  <td>{{ data['adjust_forecast_list'][i]['rc_id'] }}</td>
+		  <td>{{ data['adjust_forecast_list'][i]['part_name'] }}</td>
+		  <td>{{ data['adjust_forecast_list'][i]['product_id'] }}</td>		  
+		  <td>{{ data['adjust_forecast_list'][i]['transfer_qty'] }}</td>
+		  <td>{{ data['adjust_forecast_list'][i]['plant'] }}</td>
+		  <td>{{ data['adjust_forecast_list'][i]['part_no'] }}</td>
+		  <td>{{ data['adjust_forecast_list'][i]['adjust_forecast1'] }}</td>
+		  <td>{{ data['adjust_forecast_list'][i]['adjust_forecast2'] }}</td>
+		  <td>{{ data['adjust_forecast_list'][i]['diff'] }}</td>
+		  <td>{{ data['adjust_forecast_list'][i]['diff_percent'] }}</td>		  
+		</tr>    
+      {% endfor %}
+	  </tbody>
+	</table>  
   </div> 
-  <div class="row" style="  margin: auto;">	  
-  </div> 
+<script type="text/javascript">
+var ajaxUrlPort = '10.55.14.209:30083/gbim/' 
+
+function decodeHtml(html) {
+    var txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+}
+//console.log("adjust_forecast_list:")
+//console.log("{{data['adjust_forecast_list']}}")
+var adjust_forecast_list = JSON.parse(decodeHtml("{{data['adjust_forecast_list']}}").replace(/'/g, '"')) 
+
+//console.log('adjust_forecast_list:')
+//console.log(adjust_forecast_list)
+function filter(){
+	filter_dict = [];
+	if($("#create_ym").val().trim() != ''){
+		if($("#create_ym").val() != 'ALL'){
+			filter_dict.push({key:"create_ym",value:$("#create_ym").val().trim()})
+		}	
+	}
+	if($("#rc_id").val().trim() != ''){
+		filter_dict.push({key:"rc_id",value:$("#rc_id").val().trim()})
+	}
+	if($("#part_name").val().trim() != ''){
+		filter_dict.push({key:"part_name",value:$("#part_name").val().trim()})
+	}
+	if($("#plant").val().trim() != ''){
+		filter_dict.push({key:"plant",value:$("#plant").val().trim()})
+	}
+	
+	tmp = [];
+	for(i in adjust_forecast_list){
+		accept = 1;
+		for(f in filter_dict){		
+			key = filter_dict[f]["key"];
+			value = filter_dict[f]["value"];			
+			if(adjust_forecast_list[i][key] != value){
+				accept = 0;
+			}
+		}
+		if(accept == 1){
+			tmp.push(adjust_forecast_list[i])
+		}
+	}
+	var table = $('#adjust_forecast').DataTable();
+	table.clear().draw();
+	table.destroy(); 
+	
+	html_string = ''
+	for(i in tmp){
+		html_string = html_string+'<tr><td>'+tmp[i]['create_ym']+'</td>'
+		+'<td>'+tmp[i]['rc_id']+'</td>'
+		+'<td>'+tmp[i]['part_name']+'</td>'
+		+'<td>'+tmp[i]['product_id']+'</td>'
+		+'<td>'+tmp[i]['transfer_qty']+'</td>'
+		+'<td>'+tmp[i]['plant']+'</td>'
+		+'<td>'+tmp[i]['part_no']+'</td>'
+		+'<td>'+tmp[i]['adjust_forecast1']+'</td>'
+		+'<td>'+tmp[i]['adjust_forecast2']+'</td>'
+		+'<td>'+tmp[i]['diff']+'</td>'
+		+'<td>'+tmp[i]['diff_percent']+'</td></tr>'  
+	} 
+		  
+	$("#adjust_forecast_list").html(html_string)
+	 
+	$('#adjust_forecast').DataTable({
+		  "Sorting": [],
+		  columnDefs: [{
+		  orderable: false 
+		  }]
+		}); 
+}
+function download(){    
+    var url = '/gbim/download';
+	var form = $('<form action="' + url + '" method="post">' +
+	  '<input type="text" name="filename" value="GPIM_PART_FORECAST.xlsx" />' +
+	  '<input type="text" name="create_ym" value="'+$("#create_ym").val().trim()+'" />' +
+	  '<input type="text" name="rc_id" value="'+$("#rc_id").val().trim()+'" />' +
+	  '<input type="text" name="part_name" value="'+$("#part_name").val().trim()+'" />' +
+	  '<input type="text" name="plant" value="'+$("#plant").val().trim()+'" />' +
+	  '</form>');
+	$('body').append(form);
+	form.submit(); 
+}
+
+ 
+$(document).ready(function() {   
+  $('#adjust_forecast').DataTable({
+    "Sorting": [],
+    columnDefs: [{
+      orderable: false 
+    }]
+  });  
+  
+  $(".search_keyword").change(function(){
+	filter();
+	});
+});
+
+colorList = ['#D8BFD8','#008000','#F0E68C','#F0E68C','#32CD32','#DCDCDC','#8B008B','#FA8072','#E6E6FA','#FF69B4','#FFC0CB','#FFD700','#87CEFA','#BC8F8F','#AFEEEE','#B0C4DE','#7CFC00','#66CDAA','#808000','#DDA0DD','#FF4500'];
+var forecast_list = JSON.parse(decodeHtml("{{data['forecast_list']}}").replace(/'/g, '"'))
+console.log('forecast_list:')
+console.log(forecast_list)
+ 
+var rc_id_list = JSON.parse(decodeHtml("{{data['rc_id_list']}}").replace(/'/g, '"'))
+console.log('rc_id_list:')
+console.log(rc_id_list)
+legendColor = []
+series = []
+for (const part_name in forecast_list) { 
+	console.log('part_name:'+part_name)
+	af_list = []
+	hq_list = []
+	for( i in rc_id_list){
+	    rc_id = rc_id_list[i]
+		//console.log(' rc_id:'+rc_id)
+		if(forecast_list[part_name][rc_id] == undefined){
+			af_list.push(0)
+			hq_list.push(0)
+		}else if(forecast_list[part_name][rc_id] !== undefined){
+			af = forecast_list[part_name][rc_id]['af']
+			hq = forecast_list[part_name][rc_id]['hq']
+			af_list.push(parseInt(af))
+			hq_list.push(parseInt(hq))
+			legendColor.push(colorList[i]); 
+		}		
+	}
+	
+	console.log(part_name+' af_list:')
+	console.log(af_list)
+	console.log(part_name+' hq_list:')
+	console.log(hq_list)
+	series.push({
+	  name: part_name ,
+	  type: 'bar',
+	  label: {				 
+			normal : {
+				show: true,								 
+				formatter:function(a) {value = a.value; if( value<=150) return ''; let str = value.toString(); let reg = str.indexOf(".") > -1 ? /(\d)(?=(\d{3})+\.)/g : /(\d)(?=(?:\d{3})+$)/g; return str.replace(reg,"$1,");
+				}
+			}
+	  },
+	  stack: 'af',
+	  emphasis: {
+		focus: 'series'
+	  },
+	  data: af_list		   
+	});
+	
+	series.push({
+	  name: part_name ,
+	  type: 'bar',
+	  label: {				 
+			normal : {
+				show: true,								 
+				formatter:function(a) {value = a.value; if( value<=150) return ''; let str = value.toString(); let reg = str.indexOf(".") > -1 ? /(\d)(?=(\d{3})+\.)/g : /(\d)(?=(?:\d{3})+$)/g; return str.replace(reg,"$1,");
+				}
+			}
+	  },
+	  stack: 'hq',
+	  emphasis: {
+		focus: 'series'
+	  },
+	  data: hq_list		   
+	});
+}	
+for( i in rc_id_list){
+	rc_id_list[i] = '   預估              已調撥\n'+rc_id_list[i]
+}
+//colorList = ['#D8BFD8','#D8BFD8','#008000','#008000','#F0E68C','#F0E68C','#32CD32','#32CD32','#DCDCDC','#DCDCDC','#8B008B','#8B008B','#FA8072','#FA8072','#E6E6FA','#E6E6FA'];
+require(['echarts'], function (echarts) { 
+	var chart = echarts.init(document.getElementById('chartdiv')); 
+	chart.setOption( option = {
+	  tooltip: {},
+	  legend: {},
+	  //color: colorList,
+	  legend: {
+		//data:legendData
+		},
+	  grid: {
+		left: '3%',
+		right: '4%',
+		bottom: '3%',
+		containLabel: true
+	  },
+	  xAxis: [
+		{
+		  type: 'category',
+		  data: rc_id_list 
+		}
+	  ],
+	  yAxis: [
+		{
+		  name: 'Parts片數',
+		  type: 'value'
+		}
+	  ],
+	  series: series
+	});
+
+	var dragging;
+	var draggingDataIndex;
+	var dx;
+	var dy;
+	var zr = chart.getZr(); 
+})
+
+
+/*  
+am5.ready(function() {
+
+	// Create root element
+	// https://www.amcharts.com/docs/v5/getting-started/#Root_element
+	var root = am5.Root.new("chartdiv");
+
+	// Set themes
+	// https://www.amcharts.com/docs/v5/concepts/themes/
+	root.setThemes([am5themes_Animated.new(root)]);
+
+	var container = root.container.children.push(
+	  am5.Container.new(root, {
+		width: am5.p100,
+		height: am5.p100,
+		layout: root.horizontalLayout
+	  })
+	);
+
+	// Create main chart
+	// https://www.amcharts.com/docs/v5/charts/percent-charts/pie-chart/
+	var chart = container.children.push(
+	  am5percent.PieChart.new(root, {
+		tooltip: am5.Tooltip.new(root, {})
+	  })
+	);
+	//chart.root.dom.style.width = '80%'
+	// 
+	// Create series
+	// https://www.amcharts.com/docs/v5/charts/percent-charts/pie-chart/#Series
+	var series = chart.series.push(
+	  am5percent.PieSeries.new(root, {
+		valueField: "value",
+		categoryField: "category",
+		alignLabels: true
+	  })
+	);
+
+	series.labels.template.setAll({
+	  textType: "circular",
+	  radius: 4
+	});
+	series.ticks.template.set("visible", true);
+	series.slices.template.set("toggleKey", "none");
+
+	// add events
+	series.slices.template.events.on("click", function(e) {
+	  selectSlice(e.target);
+	});
+
+	// Create sub chart
+	// https://www.amcharts.com/docs/v5/charts/percent-charts/pie-chart/
+	var subChart = container.children.push(
+	  am5percent.PieChart.new(root, {
+		radius: am5.percent(50),
+		tooltip: am5.Tooltip.new(root, {}),
+		alignLabels: true
+	  })
+	);
+
+	// Create sub series
+	// https://www.amcharts.com/docs/v5/charts/percent-charts/pie-chart/#Series
+	var subSeries = subChart.series.push(
+	  am5percent.PieSeries.new(root, {
+		valueField: "value",
+		categoryField: "category"
+	  })
+	);
+
+	subSeries.data.setAll(part_name_list);
+	subSeries.labels.template.set("visible", false);
+	//subSeries.slices.template.set("visible", false);
+	//subSeries.slices.template.set("toggleKey", "none");
+	subSeries.ticks.template.set("visible", false );
+
+
+	var selectedSlice;
+
+	series.on("startAngle", function() {
+	  updateLines();
+	});
+
+	container.events.on("boundschanged", function() {
+	  root.events.on("frameended", function(){
+		updateLines();
+	   })
+	})
+
+	function updateLines() {
+	  if (selectedSlice) {
+		var startAngle = selectedSlice.get("startAngle");
+		var arc = selectedSlice.get("arc");
+		var radius = selectedSlice.get("radius");
+
+		var x00 = radius * am5.math.cos(startAngle);
+		var y00 = radius * am5.math.sin(startAngle);
+
+		var x10 = radius * am5.math.cos(startAngle + arc);
+		var y10 = radius * am5.math.sin(startAngle + arc);
+
+		var subRadius = subSeries.slices.getIndex(0).get("radius");
+		var x01 = 0;
+		var y01 = -subRadius;
+
+		var x11 = 0;
+		var y11 = subRadius;
+
+		var point00 = series.toGlobal({ x: x00, y: y00 });
+		var point10 = series.toGlobal({ x: x10, y: y10 });
+
+		var point01 = subSeries.toGlobal({ x: x01, y: y01 });
+		var point11 = subSeries.toGlobal({ x: x11, y: y11 });
+
+		line0.set("points", [point00, point01]);
+		line1.set("points", [point10, point11]);
+	  }
+	}
+
+	// lines
+	var line0 = container.children.push(
+	  am5.Line.new(root, {
+		position: "absolute",
+		stroke: root.interfaceColors.get("text"),
+		strokeDasharray: [2, 2]
+	  })
+	);
+	var line1 = container.children.push(
+	  am5.Line.new(root, {
+		position: "absolute",
+		stroke: root.interfaceColors.get("text"),
+		strokeDasharray: [2, 2]
+	  })
+	);
+
+	// Set data
+	// https://www.amcharts.com/docs/v5/charts/percent-charts/pie-chart/#Setting_data
+	series.data.setAll(forecast_list);
+	 
+
+	function selectSlice(slice) {
+	  selectedSlice = slice;
+	  var dataItem = slice.dataItem;
+	  var dataContext = dataItem.dataContext;
+	 
+	  if (dataContext) {
+		var i = 0;
+		subSeries.data.each(function(dataObject) {
+		
+		
+		  if(dataContext.subData[i]['value'] > 0){	
+		  console.log(dataContext.subData[i])
+		console.log(dataContext.subData[i]['value'])
+			subSeries.data.setIndex(i, dataContext.subData[i]);
+		  }
+		  i++;
+		  
+		});
+	  }
+	 
+	  var middleAngle = slice.get("startAngle") + slice.get("arc") / 2;
+	  var firstAngle = series.dataItems[0].get("slice").get("startAngle");
+
+	  series.animate({
+		key: "startAngle",
+		to: firstAngle - middleAngle,
+		duration: 1000,
+		easing: am5.ease.out(am5.ease.cubic)
+	  });
+	  series.animate({
+		key: "endAngle",
+		to: firstAngle - middleAngle + 360,
+		duration: 1000,
+		easing: am5.ease.out(am5.ease.cubic)
+	  });
+	}
+
+	//container.appear(2200, 10);
+
+	series.events.on("datavalidated", function() {
+	  selectSlice(series.slices.getIndex(0));
+	});
+
+});*/
+   
+</script>
+  
 {% endblock %}

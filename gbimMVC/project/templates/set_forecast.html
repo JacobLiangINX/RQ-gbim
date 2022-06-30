@@ -1,0 +1,381 @@
+{% extends "layout.html" %}
+{% block title %}SMART FR{% endblock %}
+{% block content %}
+<style>
+html, body, #main {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+}
+
+#chartdiv {
+  width: 100%;
+  height: 400px; 
+} 
+table.dataTable thead .sorting:after,
+table.dataTable thead .sorting:before,
+table.dataTable thead .sorting_asc:after,
+table.dataTable thead .sorting_asc:before,
+table.dataTable thead .sorting_asc_disabled:after,
+table.dataTable thead .sorting_asc_disabled:before,
+table.dataTable thead .sorting_desc:after,
+table.dataTable thead .sorting_desc:before,
+table.dataTable thead .sorting_desc_disabled:after,
+table.dataTable thead .sorting_desc_disabled:before {
+bottom: .5em;
+}
+</style>
+<script src="../static/js/simpleRequire.js"></script>
+<script src="../static/js/config.js"></script>
+  <!-- 可視圖 -->
+  <div class="row" style="  margin: auto;">	 
+    <div id="chartdiv" style="margin-top: ;"></div>   
+  </div> 
+  
+  <!-- 查詢 -->
+  <div class="row" style="margin-top:20px;">
+    <div class="col">
+      <select class="form-select search_keyword" aria-label="Default select example" id="FCST_MONTH"> 
+	    {% for ym in data['fcst_month_search']   %}
+	      <option value="{{ ym }}">{{ ym }}</option>
+	    {% endfor %}
+	  </select>
+    </div>
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="機種(Grouping)" id="MOTHER_MODEL_NAME">
+    </div>
+	<div class="col">
+      <input type="text" class="form-control search_keyword" placeholder="產品週期" id="PHASE">
+    </div> 
+	<div class="col">
+      <button type="button" class="btn btn-secondary" onclick="download();">查詢結果下載</button>
+    </div>
+  </div>
+  
+  <!-- 表 -->
+  <div class="row" style="margin-top:20px;">
+    <table id="set_forecast" class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
+	  <thead align="center">
+	    <tr>			 
+			<th rowspan="2" class="th-sm">當月(N)</th>
+			<th rowspan="2" class="th-sm">機種(Grouping)</th>
+			<th rowspan="2" class="th-sm">機種</th>
+			<th rowspan="2" class="th-sm">產品週期</th>
+			<td colspan="6">新品(Set)</td>
+			<td colspan="3">整新品(Set)</td>
+		</tr>
+		<tr>
+			<th class="th-sm">N+3個月預估需求量</th>
+			<th class="th-sm"> RC庫存量&nbsp;&nbsp; (截至上個月底)</th>
+			<th class="th-sm">On Way Q'ty</th>
+			<th class="th-sm">RG Q'ty</th>
+			<th class="th-sm">警戒水位</th>
+			<th class="th-sm">調撥數量</th>
+			
+			<th class="th-sm">N+1個月預估需求量</th>
+			<th class="th-sm"> RC庫存量&nbsp;&nbsp; (截至上個月底)</th>
+			<th class="th-sm">調撥數量</th>
+		</tr> 
+	  </thead>
+	  <tbody id="fcst_output_list">
+	  {% for i in data['fcst_output_list'] %} 	  
+	    <tr>
+		  <td>{{ data['fcst_output_list'][i]['FCST_MONTH'] }}</td>
+		  <td>{{ data['fcst_output_list'][i]['MOTHER_MODEL_NAME'] }}</td>
+		  <td>{{ data['fcst_output_list'][i]['MODEL_NAME'] }}</td>
+		  <td>{{ data['fcst_output_list'][i]['PHASE'] }}</td>
+		  <td>{{ data['fcst_output_list'][i]['FCST_QTY_A'] }}</td>
+		  <td>{{ data['fcst_output_list'][i]['INVENTORY_A'] }}</td>
+		  <td>{{ data['fcst_output_list'][i]['ON_WAY_QTY'] }}</td>
+		  <td>{{ data['fcst_output_list'][i]['RG_QTY'] }}</td>
+		  <td>{{ data['fcst_output_list'][i]['ALERT_INVENTORY'] }}</td>
+		  <td 
+		  {% if data['fcst_output_list'][i]['TRANSFER_QTY_A'] !='' and data['fcst_output_list'][i]['TRANSFER_QTY_A']|int >= 0  %}
+		  style="color:white;background-color:red"
+		  {% elif data['fcst_output_list'][i]['TRANSFER_QTY_A'] !='' and data['fcst_output_list'][i]['TRANSFER_QTY_A']|int < 0 %}
+		  style="color:white;background-color:green"
+		  {% endif %}>{{ data['fcst_output_list'][i]['TRANSFER_QTY_A'] }}</td>
+		  <td>{{ data['fcst_output_list'][i]['FCST_QTY_B'] }}</td>
+		  <td>{{ data['fcst_output_list'][i]['INVENTORY_B'] }}</td>
+		  <td 
+		  {% if data['fcst_output_list'][i]['TRANSFER_QTY_B'] !='' and data['fcst_output_list'][i]['TRANSFER_QTY_B']|int >= 0  %}
+		  style="color:white;background-color:red"
+		  {% elif data['fcst_output_list'][i]['TRANSFER_QTY_B'] !='' and data['fcst_output_list'][i]['TRANSFER_QTY_B']|int < 0 %}
+		  style="color:white;background-color:green"
+		  {% endif %}>{{ data['fcst_output_list'][i]['TRANSFER_QTY_B'] }}</td>
+		</tr>    
+      {% endfor %}
+	  </tbody>
+	</table>  
+  </div>
+
+<script type="text/javascript">
+var ajaxUrlPort = '10.55.14.209:30083/gbim/' 
+function filter(){ 
+	filter_dict = [];
+	FCST_MONTH = $("#FCST_MONTH").val().trim()
+	MOTHER_MODEL_NAME = $("#MOTHER_MODEL_NAME").val().trim()
+	PHASE = $("#PHASE").val().trim()
+	if(FCST_MONTH != ''){
+		filter_dict.push({key:"FCST_MONTH",value:FCST_MONTH})
+	} 
+	if(MOTHER_MODEL_NAME != ''){
+		filter_dict.push({key:"MOTHER_MODEL_NAME",value:MOTHER_MODEL_NAME})
+	}
+	if(PHASE != ''){
+		filter_dict.push({key:"PHASE",value:PHASE})
+	}
+	tmp = [];
+	for(i in fcst_output_list){
+		accept = 1;
+		for(f in filter_dict){		
+			key = filter_dict[f]["key"];
+			value = filter_dict[f]["value"];			
+			if(fcst_output_list[i][key] != value){
+				accept = 0;
+			}
+		}
+		if(accept == 1){
+			tmp.push(fcst_output_list[i])
+		}
+	}
+	console.log('filter: '+tmp+' '+tmp.length)
+	console.log(tmp)
+	console.log(tmp.length)
+	if(tmp.length > 0){
+		set_forecast_api(MOTHER_MODEL_NAME, PHASE)
+	}
+	var table = $('#set_forecast').DataTable();
+	table.clear().draw();
+	table.destroy();
+	
+	html_string = ''
+	for(i in tmp){
+	    styleString1 = tmp[i]['TRANSFER_QTY_A'] != '' && tmp[i]['TRANSFER_QTY_A'] >= 0 ? 'style="color:white;background-color:red"':'style="color:white;background-color:green"';
+	    styleString2 = tmp[i]['TRANSFER_QTY_B'] != '' && tmp[i]['TRANSFER_QTY_B'] >= 0 ? 'style="color:white;background-color:red"':'style="color:white;background-color:green"';
+		html_string = html_string+"<tr><td>"+FCST_MONTH+"</td>"
+		+'<td>'+tmp[i]['MOTHER_MODEL_NAME']+'</td>'
+		+'<td>'+tmp[i]['MODEL_NAME']+'</td>'
+		+'<td>'+tmp[i]['PHASE']+'</td>'
+		+'<td>'+tmp[i]['FCST_QTY_A']+'</td>'
+		+'<td>'+tmp[i]['INVENTORY_A']+'</td>'
+		+'<td>'+tmp[i]['ON_WAY_QTY']+'</td>'
+		+'<td>'+tmp[i]['RG_QTY']+'</td>'
+		+'<td>'+tmp[i]['ALERT_INVENTORY']+'</td>'
+		+'<td '+styleString1+'>'+tmp[i]['TRANSFER_QTY_A']+'</td>'
+		+'<td>'+tmp[i]['FCST_QTY_B']+'</td>'
+		+'<td>'+tmp[i]['INVENTORY_B']+'</td>'
+		+'<td '+styleString2+'>'+tmp[i]['TRANSFER_QTY_B']+'</td></tr>'
+	}
+	
+	$("#fcst_output_list").html(html_string) 
+ 
+	$('#set_forecast').DataTable({
+		  "Sorting": [],
+		  columnDefs: [{
+		  orderable: false 
+		  }]
+		}); 
+}
+function decodeHtml(html) {
+    var txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+}
+function download(){    
+    var url = '/gbim/download';
+	var form = $('<form action="' + url + '" method="post" style="display:none">' +
+	  '<input type="text" name="filename" value="VIZIO_FCST_OUTPUT.xlsx" />' +
+	  '<input type="text" name="FCST_MONTH" value="'+$("#FCST_MONTH").val().trim()+'" />' +
+	  '<input type="text" name="MOTHER_MODEL_NAME" value="'+$("#MOTHER_MODEL_NAME").val().trim()+'" />' +
+	  '<input type="text" name="PHASE" value="'+$("#PHASE").val().trim()+'" />' +
+	  '</form>');
+	$('body').append(form);
+	form.submit(); 
+}
+//http://10.55.14.209:30083/gbim/set_forecast_api
+function set_forecast_api(MOTHER_MODEL_NAME, PHASE){ 
+	//alert('MOTHER_MODEL_NAME:'+MOTHER_MODEL_NAME+', PHASE:'+PHASE)
+	$.ajax({
+		url: "http://"+ajaxUrlPort+"set_forecast_api",
+		type: "GET",
+		dataType: 'json',
+		data:{ MOTHER_MODEL_NAME:MOTHER_MODEL_NAME, PHASE:PHASE},
+		contentType: "application/json; charset=utf-8",
+		success: function (data) {
+			console.log('set_forecast_api:')
+			console.log(data)
+			fcst_month = data['fcst_month']
+			FCST_QTY_B = data['FCST_QTY_B'] 
+			FCST_QTY_A = data['FCST_QTY_A']
+			INVENTORY_B = data['INVENTORY_B']
+			INVENTORY_A = data['INVENTORY_A']
+			ON_WAY_QTY = data['ON_WAY_QTY']
+			RG_QTY = data['RG_QTY']
+			COMSUMPTION_AVG = data['COMSUMPTION_AVG']
+			Echarts()
+		},
+		error: function(xhr) {
+		  alert('set_forecast_api 發生錯誤:'+JSON.stringify(xhr)); 
+		}
+	});	
+}
+$(document).ready(function() {  
+  $(".search_keyword").change(function(){
+    filter();
+  });  
+	$('#set_forecast').DataTable({
+    "Sorting": [],
+    columnDefs: [{
+      orderable: false 
+    }]
+  });
+  filter();
+});
+
+var fcst_month_search = JSON.parse(decodeHtml("{{data['fcst_month_search']}}").replace(/'/g, '"')) 
+console.log('fcst_month_search:')
+console.log(fcst_month_search)
+console.log('fcst_month_search:')
+var fcst_output_list = JSON.parse(decodeHtml("{{data['fcst_output_list']}}").replace(/'/g, '"')) 
+
+var fcst_month = ''
+var FCST_QTY_B = '' 
+var FCST_QTY_A = ''
+var INVENTORY_B = ''
+var INVENTORY_A = ''
+var ON_WAY_QTY = ''
+var RG_QTY = ''
+var COMSUMPTION_AVG = ''
+/*
+var fcst_month = JSON.parse(decodeHtml("{{data['fcst_month']}}").replace(/'/g, '"'))
+console.log('fcst_month:')
+console.log(fcst_month)
+var FCST_QTY_B = JSON.parse(decodeHtml("{{data['FCST_QTY_B']}}").replace(/'/g, '"'))
+console.log('FCST_QTY_B:')
+console.log(FCST_QTY_B)
+var FCST_QTY_A = JSON.parse(decodeHtml("{{data['FCST_QTY_A']}}").replace(/'/g, '"'))
+console.log('FCST_QTY_A:')
+console.log(FCST_QTY_A)
+var INVENTORY_B = JSON.parse(decodeHtml("{{data['INVENTORY_B']}}").replace(/'/g, '"'))
+console.log('INVENTORY_B:')
+console.log(INVENTORY_B)
+var INVENTORY_A = JSON.parse(decodeHtml("{{data['INVENTORY_A']}}").replace(/'/g, '"'))
+console.log('INVENTORY_A:')
+console.log(INVENTORY_A)
+var ON_WAY_QTY = JSON.parse(decodeHtml("{{data['ON_WAY_QTY']}}").replace(/'/g, '"'))
+console.log('ON_WAY_QTY:')
+console.log(ON_WAY_QTY)
+var RG_QTY = JSON.parse(decodeHtml("{{data['RG_QTY']}}").replace(/'/g, '"'))
+console.log('RG_QTY:')
+console.log(RG_QTY)
+var COMSUMPTION_AVG = JSON.parse(decodeHtml("{{data['COMSUMPTION_AVG']}}").replace(/'/g, '"'))
+console.log('COMSUMPTION_AVG:')
+console.log(COMSUMPTION_AVG)
+*/
+var legendColor = ['#FFA500',   '#0000CD','#87CEFA','#FFC0CB','#9ACD32',    '#808080','#C0C0C0']
+
+function Echarts(){
+	require(['echarts'], function (echarts) {
+	var chart = echarts.init(document.getElementById('chartdiv'));
+	 
+	chart.setOption( option = {
+	  tooltip: {
+		trigger: 'axis',
+		axisPointer: {
+		  type: 'shadow'
+		}
+	  },
+	  legend: {left: '10%'},
+	  color: legendColor,
+	  grid: {
+		left: '3%',
+		right: '4%',
+		bottom: '3%',
+		containLabel: true
+	  },
+	  xAxis: [
+		{
+		  type: 'category',
+		  data: fcst_month//['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+		}
+	  ],
+	  yAxis: [
+		{
+		  name: '數量(台)',
+		  type: 'value'
+		}/* ,
+		{
+		  name: '平均月耗用 (台)',
+		  type: 'value'
+		}*/
+	  ],
+	  series: [
+		{
+		  name: '平均月耗用',
+		  data: COMSUMPTION_AVG,
+		  type: 'line' 
+		  //yAxisIndex: 1
+		},
+		{
+		  name: '新品 RC 庫存',
+		  type: 'bar',
+		  stack: 'Ad',
+		  emphasis: {
+			focus: 'series'
+		  },
+		  data: INVENTORY_A//[150, 232, 201, 154, 190, 330, 410]
+		} ,
+		{
+		  name: '整新品 RC 庫存',
+		  type: 'bar',
+		  stack: 'Ad',
+		  emphasis: {
+			focus: 'series'
+		  },
+		  data: INVENTORY_B//[150, 232, 201, 154, 190, 330, 410]
+		} ,
+		{
+		  name: 'On Way',
+		  type: 'bar',
+		  stack: 'Ad',
+		  emphasis: {
+			focus: 'series'
+		  },
+		  data: ON_WAY_QTY//[220, 182, 191, 234, 290, 330, 310]
+		}, 
+		{
+		  name: 'RG',
+		  type: 'bar',
+		  stack: 'Ad',
+		  emphasis: {
+			focus: 'series'
+		  },
+		  data: RG_QTY//[120, 132, 101, 134, 90, 230, 210]
+		},
+		{
+		  name: '新品預估需求量(4 months)',
+		  type: 'bar', 
+		  stack: 'Search Engine',
+		  emphasis: {
+			focus: 'series'
+		  },
+		  data: FCST_QTY_A//[620, 732, 701, 734, 1090, 1130, 1120]
+		},
+		{
+		  name: '整新品預估需求量(2 months)',
+		  type: 'bar',
+		  stack: 'Search Engine',
+		  emphasis: {
+			focus: 'series'
+		  },
+		  data: FCST_QTY_B//[120, 132, 101, 134, 290, 230, 220]
+		} 
+	  ]
+	});
+	 
+
+	})
+}
+</script>  
+{% endblock %}
