@@ -7,9 +7,10 @@ from collections import OrderedDict
 from project.controllers import dbconfig
 import pandas as pd 
 import json
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
-
+#from datetime import datetime
+from datetime import datetime, date, timezone,timedelta
+#from project.config import *
+from dateutil.relativedelta import relativedelta 
 import os
 from os.path import basename
 import smtplib
@@ -302,6 +303,21 @@ def send_mail(send_from, send_to, subject, text, files=None, server="10.53.248.1
 @login_required
 def download():    
     filename = request.form['filename']
+    path_result = r'/home/docker/gbimMVC/sendFile'
+    if filename == 'VIZIO_FCST_OUTPUT_2.xlsx' : # set_material
+        con = cx_Oracle.connect(dbconfig.qintpotlDB, encoding="UTF-8", nencoding="UTF-8", )
+        cur = con.cursor()
+        whereStr = ' where 1=1 '
+        whereDict = {} 
+        FCST_MONTH = request.form["FCST_MONTH"]
+        if FCST_MONTH != '' :
+            whereStr = whereStr + ' and TO_CHAR(FCST_MONTH, \'YYYY/MM\')=:FCST_MONTH'
+            whereDict['FCST_MONTH'] = FCST_MONTH 
+        material_item_string = request.form["material_item_list"] 
+        if material_item_string != '' : 
+            whereStr = whereStr + " and material_item in ("+material_item_string+")" 
+        # GROUPCODE,MATERIAL_ITEM,FCST_QTY,INVENTORY,ON_WAY_QTY,ALERT_INVENTORY,TRANSFER_QTY,VIZIO_MODEL
+        cur.execute('select TO_CHAR(FCST_MONTH, \'YYYY/MM\') as "預估月份 (N)",GROUPCODE,MATERIAL_ITEM as "Material Item",FCST_QTY as "N+3 個月預估需求量",INVENTORY as "RC 庫存量",ON_WAY_QTY as "On Way Qty",ALERT_INVENTORY as "警戒水位",TRANSFER_QTY as "調撥數量",VIZIO_MODEL as "VIZIO MODEL" from RQ_ADM.VIZIO_FCST_OUTPUT_2 '+whereStr+' order by MATERIAL_ITEM desc ',whereDict)
     if filename == 'VIZIO_FCST_OUTPUT.xlsx' : # set_forecast
         con = cx_Oracle.connect(dbconfig.qintpotlDB, encoding="UTF-8", nencoding="UTF-8", )
         cur = con.cursor()
@@ -389,10 +405,27 @@ def download():
         whereDict = {} 
         startDate = request.form["startDate"]
         endDate = request.form["endDate"]
-        print('startDate:',startDate,',endDate:',endDate)
-        #cur.execute('select TO_CHAR(date_create, \'YYYY/MM/DD\') date_create,sr_type,p_model,p_serialnumber,TO_CHAR(purchasedate, \'YYYY/MM/DD\') purchasedate,TO_CHAR(send_date, \'YYYY/MM/DD\') send_date,material_item,rpt_file_name from RMA_ADMIN.Z_VIZIO_ACC_SERVICE_RPT where TO_CHAR(send_date, \'YYYY/MM/DD\') between :startDate and :endDate order by send_date desc',{'startDate':startDate,'endDate':endDate})
-        cur.execute('select TO_CHAR(date_create, \'YYYY/MM/DD\') date_create,sr_type,p_model,p_serialnumber,TO_CHAR(purchasedate, \'YYYY/MM/DD\') purchasedate,TO_CHAR(send_date, \'YYYY/MM/DD\') send_date,material_item,\'Z_VIZIO_ACC_SERVICE_RPT\' rpt,rpt_file_name from RMA_ADMIN.Z_VIZIO_ACC_SERVICE_RPT where TO_CHAR(send_date, \'YYYY/MM/DD\') between :startDate and :endDate union all select TO_CHAR(date_issued, \'YYYY/MM/DD\') date_create,sr_type,tv_model p_model,tv_serialno p_serialnumber,TO_CHAR(purchasedate, \'YYYY/MM/DD\') purchasedate,TO_CHAR(ship_date, \'YYYY/MM/DD\') send_date, material_item,\'Z_VIZIO_OSR_PART_SHIPPED_RPT\' rpt,rpt_file_name from RMA_ADMIN.Z_VIZIO_OSR_PART_SHIPPED_RPT where TO_CHAR(date_issued, \'YYYY/MM/DD\') between :startDate and :endDate union all select TO_CHAR(date_create, \'YYYY/MM/DD\') date_create,sr_type,p_model,p_serialnumber,TO_CHAR(purchasedate, \'YYYY/MM/DD\') purchasedate,TO_CHAR(send_date, \'YYYY/MM/DD\') send_date,material_item,\'Z_VIZIO_AR_SR_RR_OSS_RPT\' rpt,rpt_file_name from RMA_ADMIN.Z_VIZIO_AR_SR_RR_OSS_RPT where TO_CHAR(send_date, \'YYYY/MM/DD\') between :startDate and :endDate union all select TO_CHAR(date_create, \'YYYY/MM/DD\') date_create,sr_type,p_model,p_serialnumber,TO_CHAR(purchasedate, \'YYYY/MM/DD\') purchasedate,TO_CHAR(daterepair, \'YYYY/MM/DD\') send_date,material_item,\'Z_VIZIO_WEEKLY_REPAIR_RPT\' rpt,rpt_file_name from RMA_ADMIN.Z_VIZIO_WEEKLY_REPAIR_RPT where TO_CHAR(daterepair, \'YYYY/MM/DD\') between :startDate and :endDate order by rpt , date_create desc',{'startDate':startDate,'endDate':endDate})
-    path_result = r'/home/docker/gbimMVC/sendFile'
+        print('startDate:',startDate,',endDate:',endDate) 
+        cur.execute('select asp,sr_number,TO_CHAR(date_create, \'YYYY/MM/DD\') date_create,sr_type,p_model,p_serialnumber,TO_CHAR(purchasedate, \'YYYY/MM/DD\') purchasedate,TO_CHAR(send_date, \'YYYY/MM/DD\') send_date,material_item,\'Z_VIZIO_ACC_SERVICE_RPT\' rpt,rpt_file_name from RMA_ADMIN.Z_VIZIO_ACC_SERVICE_RPT where TO_CHAR(send_date, \'YYYY/MM/DD\') between :startDate and :endDate union all select providerid as asp,osr as sr_number,TO_CHAR(date_issued, \'YYYY/MM/DD\') date_create,sr_type,tv_model p_model,tv_serialno p_serialnumber,TO_CHAR(purchasedate, \'YYYY/MM/DD\') purchasedate,TO_CHAR(ship_date, \'YYYY/MM/DD\') send_date, material_item,\'Z_VIZIO_OSR_PART_SHIPPED_RPT\' rpt,rpt_file_name from RMA_ADMIN.Z_VIZIO_OSR_PART_SHIPPED_RPT where TO_CHAR(date_issued, \'YYYY/MM/DD\') between :startDate and :endDate union all select asp,sr_number,TO_CHAR(date_create, \'YYYY/MM/DD\') date_create,sr_type,p_model,p_serialnumber,TO_CHAR(purchasedate, \'YYYY/MM/DD\') purchasedate,TO_CHAR(send_date, \'YYYY/MM/DD\') send_date,material_item,\'Z_VIZIO_AR_SR_RR_OSS_RPT\' rpt,rpt_file_name from RMA_ADMIN.Z_VIZIO_AR_SR_RR_OSS_RPT where TO_CHAR(send_date, \'YYYY/MM/DD\') between :startDate and :endDate union all select asp,sr_number,TO_CHAR(date_create, \'YYYY/MM/DD\') date_create,sr_type,p_model,p_serialnumber,TO_CHAR(purchasedate, \'YYYY/MM/DD\') purchasedate,TO_CHAR(daterepair, \'YYYY/MM/DD\') send_date,material_item,\'Z_VIZIO_WEEKLY_REPAIR_RPT\' rpt,rpt_file_name from RMA_ADMIN.Z_VIZIO_WEEKLY_REPAIR_RPT where TO_CHAR(daterepair, \'YYYY/MM/DD\') between :startDate and :endDate order by rpt , date_create desc',{'startDate':startDate,'endDate':endDate})
+        columns = [desc[0] for desc in cur.description] 
+        result = cur.fetchall()
+        excelFile1 = pd.DataFrame(list(result), columns=columns)
+        
+        cur.execute('select model_number,serial_number,grade,TO_CHAR(date_in, \'YYYY/MM/DD\') date_in,TO_CHAR(date_out, \'YYYY/MM/DD\') date_out,rpt_file_name from RMA_ADMIN.Z_VIZIO_DAILY_ACTIV_BUFFER_RPT where TO_CHAR(date_in, \'YYYY/MM/DD\') between :startDate and :endDate order by date_in desc',{'startDate':startDate,'endDate':endDate})
+        columns = [desc[0] for desc in cur.description] 
+        result = cur.fetchall()
+        excelFile2 = pd.DataFrame(list(result), columns=columns)
+        
+        cur.execute('select PART_NO,TTL_AVL_QTY,MATERIAL_ITEM,GROUPCODE,KEY_PART,RPT_FILE_NAME from RMA_ADMIN.Z_VIZIO_SPARE_PARTS_RPT order by PART_NO')
+        columns = [desc[0] for desc in cur.description] 
+        result = cur.fetchall()
+        excelFile3 = pd.DataFrame(list(result), columns=columns)
+        
+        with pd.ExcelWriter(path_result+'/'+filename) as writer:  
+            excelFile3.to_excel(writer, index=False, encoding='utf-8-sig', sheet_name='spare')
+            excelFile2.to_excel(writer, index=False, encoding='utf-8-sig', sheet_name='daily rpt')
+            excelFile1.to_excel(writer, index=False, encoding='utf-8-sig', sheet_name='4 rpt')
+        return send_from_directory(path_result, filename, as_attachment=True)
     columns = [desc[0] for desc in cur.description] 
     result = cur.fetchall()
     excelFile = pd.DataFrame(list(result), columns=columns)
@@ -868,13 +901,14 @@ def admin():
     data['userChineseName'] = session['userChineseName']
     return render_template('admin.html', data = data)
 
-@app.route('/gbim/set_forecast_api', methods=['GET'])
+@app.route('/gbim/set_forecast_api', methods=['GET','POST'])
 #@login_required
 def set_forecast_api(): 
     data = {}
     data['userChineseName'] = session['userChineseName']
     whereStr = " where TO_CHAR(fcst_month, 'YYYY/MM')>='2022/01' "
     whereDict = {}
+    """
     MOTHER_MODEL_NAME = request.args.get("MOTHER_MODEL_NAME")
     
     if MOTHER_MODEL_NAME != '' :
@@ -885,6 +919,21 @@ def set_forecast_api():
         whereStr = whereStr + " and PHASE=:PHASE "
         whereDict['PHASE'] = PHASE
     print('MOTHER_MODEL_NAME:',MOTHER_MODEL_NAME,',PHASE:',PHASE)
+    """
+    models_string = request.args.get("MOTHER_MODEL_NAME")    
+    if models_string != '' :
+        #models_list=models_string.split(', ')        
+        whereStr = whereStr + " and MOTHER_MODEL_NAME in ("+models_string+")"
+        #whereDict['models_list'] = (', '.join("'" + item + "'" for item in models_list ))
+        #whereDict['models_list']=models_string
+    phases_string = request.args.get("PHASE")
+    if phases_string != '' :
+        #phases_list=phases_string.split(', ')
+        whereStr = whereStr + " and PHASE in ("+phases_string+")"
+        #whereDict['phases_list'] = (', '.join("'" + item + "'" for item in phases_list ))
+        #whereDict['phases_list']=phases_string
+    print('models_string:',models_string,',phases_string:',phases_string)
+    
     con = cx_Oracle.connect(dbconfig.qintpotlDB, encoding="UTF-8", nencoding="UTF-8")
     cur = con.cursor()
     # FCST_QTY_B 整新品，B grade
@@ -902,7 +951,12 @@ def set_forecast_api():
     ON_WAY_QTY = []
     RG_QTY = []
     COMSUMPTION_AVG = []
-    cur.execute("select TO_CHAR(a.fcst_month, 'YYYY/MM') fcst_month,a.FCST_QTY_B,a.FCST_QTY_A,a.INVENTORY_B,a.INVENTORY_A,a.ON_WAY_QTY,a.RG_QTY,b.COMSUMPTION_AVG, max_fcst_month from (select fcst_month,sum(FCST_QTY_B) FCST_QTY_B,sum(FCST_QTY_A) FCST_QTY_A,sum(INVENTORY_B) INVENTORY_B,sum(INVENTORY_A) INVENTORY_A,sum(ON_WAY_QTY) ON_WAY_QTY,sum(RG_QTY) RG_QTY from RQ_ADM.VIZIO_FCST_OUTPUT "+whereStr+" GROUP by fcst_month) a left join (select fcst_month, sum(COMSUMPTION_AVG_A)+sum(COMSUMPTION_AVG_B) COMSUMPTION_AVG from RQ_ADM.VIZIO_FCST_OUTPUT_CHECKUP "+whereStr+" GROUP by fcst_month) b on a.fcst_month = b.fcst_month left join (select max(TO_CHAR(fcst_month, 'YYYY/MM')) max_fcst_month from RQ_ADM.VIZIO_FCST_OUTPUT "+whereStr+") c on 1=1 order by a.fcst_month asc",whereDict)
+    sql="select TO_CHAR(a.fcst_month, 'YYYY/MM') fcst_month,a.FCST_QTY_B,a.FCST_QTY_A,a.INVENTORY_B,a.INVENTORY_A,a.ON_WAY_QTY,a.RG_QTY,b.COMSUMPTION_AVG, max_fcst_month from (select fcst_month,sum(FCST_QTY_B) FCST_QTY_B,sum(FCST_QTY_A) FCST_QTY_A,sum(INVENTORY_B) INVENTORY_B,sum(INVENTORY_A) INVENTORY_A,sum(ON_WAY_QTY) ON_WAY_QTY,sum(RG_QTY) RG_QTY from RQ_ADM.VIZIO_FCST_OUTPUT "+whereStr+" GROUP by fcst_month) a left join (select fcst_month, sum(COMSUMPTION_AVG_A)+sum(COMSUMPTION_AVG_B) COMSUMPTION_AVG from RQ_ADM.VIZIO_FCST_OUTPUT_CHECKUP "+whereStr+" GROUP by fcst_month) b on a.fcst_month = b.fcst_month left join (select max(TO_CHAR(fcst_month, 'YYYY/MM')) max_fcst_month from RQ_ADM.VIZIO_FCST_OUTPUT "+whereStr+") c on 1=1 order by a.fcst_month asc"
+    data['models_string']=models_string
+    data['phases_string']=phases_string
+    data['sql']=sql
+    #return data
+    cur.execute("select TO_CHAR(a.fcst_month, 'YYYY/MM') fcst_month,a.FCST_QTY_B,a.FCST_QTY_A,a.INVENTORY_B,a.INVENTORY_A,a.ON_WAY_QTY,a.RG_QTY,b.COMSUMPTION_AVG, max_fcst_month from (select fcst_month,sum(FCST_QTY_B) FCST_QTY_B,sum(FCST_QTY_A) FCST_QTY_A,sum(INVENTORY_B) INVENTORY_B,sum(INVENTORY_A) INVENTORY_A,sum(ON_WAY_QTY) ON_WAY_QTY,sum(RG_QTY) RG_QTY from RQ_ADM.VIZIO_FCST_OUTPUT "+whereStr+" GROUP by fcst_month) a left join (select fcst_month, sum(COMSUMPTION_AVG_A)+sum(COMSUMPTION_AVG_B) COMSUMPTION_AVG from RQ_ADM.VIZIO_FCST_OUTPUT_CHECKUP "+whereStr+" GROUP by fcst_month) b on a.fcst_month = b.fcst_month left join (select max(TO_CHAR(fcst_month, 'YYYY/MM')) max_fcst_month from RQ_ADM.VIZIO_FCST_OUTPUT "+whereStr+") c on 1=1 order by a.fcst_month asc")
     
     for r in cur :
         max_fcst_month = r[8]
@@ -1007,7 +1061,7 @@ def set_forecast():
     data['ON_WAY_QTY'] = ON_WAY_QTY
     data['RG_QTY'] = RG_QTY
     data['COMSUMPTION_AVG'] = COMSUMPTION_AVG"""
-    
+    MOTHER_MODEL_NAME_set = set()
     fcst_output_list = {}
     cur.execute("select TO_CHAR(FCST_MONTH, 'YYYY/MM' ),NVL(MOTHER_MODEL_NAME,'NA'),NVL(MODEL_NAME,'NA'),NVL(PHASE,'NA'),NVL(FCST_QTY_A,-9999),NVL(INVENTORY_A,-9999),NVL(ON_WAY_QTY,-9999),NVL(RG_QTY,-9999),NVL(ALERT_INVENTORY,-9999),NVL(TRANSFER_QTY_A,-9999),NVL(FCST_QTY_B,-9999),NVL(INVENTORY_B,-9999),NVL(TRANSFER_QTY_B,-9999),(select max(TO_CHAR(FCST_MONTH, 'YYYY/MM')) from RQ_ADM.VIZIO_FCST_OUTPUT) from RQ_ADM.VIZIO_FCST_OUTPUT order by FCST_MONTH desc")
     c = 0
@@ -1016,6 +1070,7 @@ def set_forecast():
         max_fcst_month = r[13]
         tmp['FCST_MONTH'] = r[0]
         tmp['MOTHER_MODEL_NAME'] = r[1] if r[1] != 'NA' else ''
+        MOTHER_MODEL_NAME_set.add(tmp['MOTHER_MODEL_NAME'])
         tmp['MODEL_NAME'] = r[2] if r[2] != 'NA' else ''
         tmp['PHASE'] = r[3] if r[3] != 'NA' else ''
         tmp['FCST_QTY_A'] = r[4] if int(r[4]) != -9999 else ''
@@ -1037,16 +1092,83 @@ def set_forecast():
         fcst_output_list[str(c)] = tmp
         c = c + 1
     data['fcst_output_list'] = fcst_output_list
-    #FCST_MONTH,MOTHER_MODEL_NAME,MODEL_NAME,PHASE,FCST_QTY_A,INVENTORY_A,ON_WAY_QTY,RG_QTY,ALERT_INVENTORY,TRANSFER_QTY_A,FCST_QTY_B,INVENTORY_B,TRANSFER_QTY_B
+    data['MOTHER_MODEL_NAME_set'] = sorted(MOTHER_MODEL_NAME_set)
     cur.close()
     con.close()
     return render_template('set_forecast.html', data = data)
+
+@app.route('/gbim/set_audit_api', methods=['GET'])
+#@login_required
+def set_audit_api():
+    data = {}
+    data['userChineseName'] = session['userChineseName']
+    whereStr1 = " where TO_CHAR(fcst_month, 'YYYY/MM')>='2022/01' "
+    whereStr2 = " where 1=1 "
+    whereDict = {}
+    MOTHER_MODEL_NAME = request.args.get("MOTHER_MODEL_NAME")    
+    if MOTHER_MODEL_NAME != '' :
+        whereStr1 = whereStr1 + ' and MOTHER_MODEL_NAME=:MOTHER_MODEL_NAME '
+        whereStr2 = whereStr2 + ' and MOTHER_MODEL_NAME=:MOTHER_MODEL_NAME '
+        whereDict['MOTHER_MODEL_NAME'] = MOTHER_MODEL_NAME
+    PHASE = request.args.get("PHASE")
+    if PHASE != '' :
+        whereStr1 = whereStr1 + ' and PHASE=:PHASE '
+        whereStr2 = whereStr2 + ' and PHASE=:PHASE '
+        whereDict['PHASE'] = PHASE
+    print('MOTHER_MODEL_NAME:',MOTHER_MODEL_NAME,',PHASE:',PHASE)
+    con = cx_Oracle.connect(dbconfig.qintpotlDB, encoding="UTF-8", nencoding="UTF-8")
+    cur = con.cursor()
+    cur1 = con.cursor()
+    COMSUMPTION = []
+    fcst_month = []
+    FCST_QTY = []
+    upper_bound = []
+    lower_bound = []
+    cur.execute("select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(COMSUMPTION_N4_A+COMSUMPTION_N2_B) COMSUMPTION from RQ_ADM.VIZIO_FCST_OUTPUT_CHECKUP "+whereStr1+" group by fcst_month order by fcst_month",whereDict)
+    for r in cur : 
+        fcst_month.append(r[0])
+        COMSUMPTION.append(r[1])
+        fcst_month_4 = (datetime.strptime(r[0], '%Y/%m') - relativedelta(months=4)).strftime("%Y/%m")
+        whereDict['fcst_month']=fcst_month_4
+        #cur1.execute("select FCST_QTY,upper_bound_a+upper_bound_b,lower_bound_a+lower_bound_b from (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(FCST_QTY_A)+sum(FCST_QTY_B) FCST_QTY from RQ_ADM.VIZIO_FCST_OUTPUT "+whereStr2+" group by fcst_month) a left join (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(CASE WHEN upper_bound < 0 THEN 0 ELSE upper_bound END) upper_bound_a ,sum(CASE WHEN lower_bound < 0 THEN 0 ELSE lower_bound END) lower_bound_a from RQ_ADM.VIZIO_A_GRADE_PREDICT GROUP by fcst_month) c on a.fcst_month = c.fcst_month left join (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(CASE WHEN upper_bound < 0 THEN 0 ELSE upper_bound END) upper_bound_b ,sum(CASE WHEN lower_bound < 0 THEN 0 ELSE lower_bound END) lower_bound_b from RQ_ADM.VIZIO_B_GRADE_PREDICT GROUP by fcst_month) d on a.fcst_month = d.fcst_month where a.fcst_month=:fcst_month",whereDict)
+        cur1.execute("select FCST_QTY,NVL(upper_bound_a, 0)+NVL(upper_bound_b, 0),NVL(lower_bound_a, 0)+NVL(lower_bound_b, 0) from (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(FCST_QTY_A)+sum(FCST_QTY_B) FCST_QTY from RQ_ADM.VIZIO_FCST_OUTPUT "+whereStr2+" group by fcst_month) a left join (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(CASE WHEN upper_bound < 0 THEN 0 ELSE upper_bound END) upper_bound_a ,sum(CASE WHEN lower_bound < 0 THEN 0 ELSE lower_bound END) lower_bound_a from RQ_ADM.VIZIO_A_GRADE_PREDICT GROUP by fcst_month) c on a.fcst_month = c.fcst_month left join (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(CASE WHEN upper_bound < 0 THEN 0 ELSE upper_bound END) upper_bound_b ,sum(CASE WHEN lower_bound < 0 THEN 0 ELSE lower_bound END) lower_bound_b from RQ_ADM.VIZIO_B_GRADE_PREDICT GROUP by fcst_month) d on a.fcst_month = d.fcst_month where a.fcst_month=:fcst_month",whereDict)        
+        """
+        for r1 in cur1 :
+            FCST_QTY.append(r1[0])
+            upper_bound.append(r1[1])
+            lower_bound.append(r1[2])
+            
+        """ 
+        cur1_ = cur1.fetchall()
+        if len(cur1_) > 0 :
+            for r1 in cur1_ :            
+                print(fcst_month_4,' => ',r1[0],' , ',r1[1],' , ', r1[2])
+                FCST_QTY.append(r1[0])                
+                upper_bound.append(r1[1])
+                lower_bound.append(r1[2]) 
+        else :
+            print(fcst_month_4,' => 0 , 0 , 0')
+            FCST_QTY.append(0)                
+            upper_bound.append(0)
+            lower_bound.append(0)    
+            #print('fcst_month_4:',fcst_month_4,' , upper_bound:',upper_bound)
+            
+    #print('upper_bound:')
+    #print(upper_bound)
+    #print('lower_bound:')
+    #print(lower_bound)
+    data['fcst_month'] = fcst_month
+    data['COMSUMPTION'] = COMSUMPTION
+    data['FCST_QTY'] = FCST_QTY
+    data['upper_bound'] = upper_bound
+    data['lower_bound'] = lower_bound
+    return data
 
 @app.route('/gbim/set_audit', methods=['GET'])
 @login_required
 def set_audit():
     data = {
-        "title": "Hello World",
+        "title": "RQM庫存預測平台",
         "body": "Flask simple MVC",
         "page_router":"整機-備品-檢核"
     }
@@ -1056,27 +1178,32 @@ def set_audit():
     cur1 = con.cursor()
     # Sell through:VIZIO_SELL_THRU_2020_01 - 2021_12.xlsx <==每月提供
     fcst_month = []
-    FCST_QTY = []
+    FCST_QTY = []    
     upper_bound = []
     lower_bound = []
     COMSUMPTION = [] 
     #cur.execute("select a.fcst_month,FCST_QTY,upper_bound_a+upper_bound_b,lower_bound_a+lower_bound_b,b.COMSUMPTION from (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(FCST_QTY_A)+sum(FCST_QTY_B) FCST_QTY from RQ_ADM.VIZIO_FCST_OUTPUT where TO_CHAR(fcst_month, 'YYYY/MM')>='2022/01' group by fcst_month) a left join (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(COMSUMPTION_N4_A+COMSUMPTION_N2_B) COMSUMPTION from RQ_ADM.VIZIO_FCST_OUTPUT_CHECKUP group by TO_CHAR(fcst_month, 'YYYY/MM')) b on a.fcst_month=b.fcst_month left join (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(CASE WHEN upper_bound < 0 THEN 0 ELSE upper_bound END) upper_bound_a ,sum(CASE WHEN lower_bound < 0 THEN 0 ELSE lower_bound END) lower_bound_a from RQ_ADM.VIZIO_A_GRADE_PREDICT GROUP by fcst_month) c on a.fcst_month = c.fcst_month left join (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(CASE WHEN upper_bound < 0 THEN 0 ELSE upper_bound END) upper_bound_b ,sum(CASE WHEN lower_bound < 0 THEN 0 ELSE lower_bound END) lower_bound_b from RQ_ADM.VIZIO_B_GRADE_PREDICT GROUP by fcst_month) d on a.fcst_month = d.fcst_month order by a.fcst_month")
     cur.execute("select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(COMSUMPTION_N4_A+COMSUMPTION_N2_B) COMSUMPTION from RQ_ADM.VIZIO_FCST_OUTPUT_CHECKUP where TO_CHAR(fcst_month, 'YYYY/MM')>='2022/01' group by fcst_month order by fcst_month")
+    
     for r in cur :
         fcst_month.append(r[0])
-        COMSUMPTION.append(r[1])
+        COMSUMPTION.append(r[1]) 
         fcst_month_4 = (datetime.strptime(r[0], '%Y/%m') - relativedelta(months=4)).strftime("%Y/%m")
-        cur1.execute("select FCST_QTY,upper_bound_a+upper_bound_b,lower_bound_a+lower_bound_b from (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(FCST_QTY_A)+sum(FCST_QTY_B) FCST_QTY from RQ_ADM.VIZIO_FCST_OUTPUT  group by fcst_month) a left join (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(CASE WHEN upper_bound < 0 THEN 0 ELSE upper_bound END) upper_bound_a ,sum(CASE WHEN lower_bound < 0 THEN 0 ELSE lower_bound END) lower_bound_a from RQ_ADM.VIZIO_A_GRADE_PREDICT GROUP by fcst_month) c on a.fcst_month = c.fcst_month left join (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(CASE WHEN upper_bound < 0 THEN 0 ELSE upper_bound END) upper_bound_b ,sum(CASE WHEN lower_bound < 0 THEN 0 ELSE lower_bound END) lower_bound_b from RQ_ADM.VIZIO_B_GRADE_PREDICT GROUP by fcst_month) d on a.fcst_month = d.fcst_month where a.fcst_month=:fcst_month",{'fcst_month':fcst_month_4})
-        for r1 in cur1 :
-            FCST_QTY.append(r1[0])
+        #cur1.execute("select FCST_QTY,upper_bound_a+upper_bound_b,lower_bound_a+lower_bound_b from (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(FCST_QTY_A)+sum(FCST_QTY_B) FCST_QTY from RQ_ADM.VIZIO_FCST_OUTPUT  group by fcst_month) a left join (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(CASE WHEN upper_bound < 0 THEN 0 ELSE upper_bound END) upper_bound_a ,sum(CASE WHEN lower_bound < 0 THEN 0 ELSE lower_bound END) lower_bound_a from RQ_ADM.VIZIO_A_GRADE_PREDICT GROUP by fcst_month) c on a.fcst_month = c.fcst_month left join (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(CASE WHEN upper_bound < 0 THEN 0 ELSE upper_bound END) upper_bound_b ,sum(CASE WHEN lower_bound < 0 THEN 0 ELSE lower_bound END) lower_bound_b from RQ_ADM.VIZIO_B_GRADE_PREDICT GROUP by fcst_month) d on a.fcst_month = d.fcst_month where a.fcst_month=:fcst_month",{'fcst_month':fcst_month_4})
+        cur1.execute("select FCST_QTY,NVL(upper_bound_a, 0)+NVL(upper_bound_b, 0),NVL(lower_bound_a, 0)+NVL(lower_bound_b, 0) from (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(FCST_QTY_A)+sum(FCST_QTY_B) FCST_QTY from RQ_ADM.VIZIO_FCST_OUTPUT  group by fcst_month) a left join (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(CASE WHEN upper_bound < 0 THEN 0 ELSE upper_bound END) upper_bound_a ,sum(CASE WHEN lower_bound < 0 THEN 0 ELSE lower_bound END) lower_bound_a from RQ_ADM.VIZIO_A_GRADE_PREDICT GROUP by fcst_month) c on a.fcst_month = c.fcst_month left join (select TO_CHAR(fcst_month, 'YYYY/MM') fcst_month,sum(CASE WHEN upper_bound < 0 THEN 0 ELSE upper_bound END) upper_bound_b ,sum(CASE WHEN lower_bound < 0 THEN 0 ELSE lower_bound END) lower_bound_b from RQ_ADM.VIZIO_B_GRADE_PREDICT GROUP by fcst_month) d on a.fcst_month = d.fcst_month where a.fcst_month=:fcst_month",{'fcst_month':fcst_month_4})
+        
+        for r1 in cur1 :            
+            #print(fcst_month_4,' => ',r1[0],' , ',r1[1],' , ', r1[2])
+            FCST_QTY.append(r1[0])                
             upper_bound.append(r1[1])
-            lower_bound.append(r1[2])
+            lower_bound.append(r1[2])  
     fcst_month_search = sorted(fcst_month, reverse = True)
     data['fcst_month_search'] = fcst_month_search
     data['fcst_month'] = fcst_month
-    data['FCST_QTY'] = FCST_QTY
-    data['upper_bound'] = upper_bound
-    data['lower_bound'] = lower_bound
+    #data['FCST_QTY'] = FCST_QTY
+    #print(FCST_QTY)
+    #data['upper_bound'] = upper_bound
+    #data['lower_bound'] = lower_bound
     data['COMSUMPTION'] = COMSUMPTION
     
     fcst_output_checkup_list = {}
@@ -1112,10 +1239,78 @@ def ftp_rpt():
         "page_router":"整機-FTP-報表"
     }
     data['userChineseName'] = session['userChineseName']
-    con = cx_Oracle.connect(dbconfig.qintpotlDB, encoding="UTF-8", nencoding="UTF-8")
-    cur = con.cursor()
+    #con = cx_Oracle.connect(dbconfig.qintpotlDB, encoding="UTF-8", nencoding="UTF-8")
+    #cur = con.cursor()
     #cur.execute("")
     return render_template('ftp_rpt.html', data = data)
+
+@app.route('/gbim/set_material_api_1', methods=['GET'])
+#@login_required
+def set_material_api_1():
+    data = {}  
+    material_item_string = request.args.get("material_item")    
+    whereStr = "" 
+    if material_item_string != '' :
+        whereStr = whereStr + " and material_item in ("+material_item_string+")" 
+    con = cx_Oracle.connect(dbconfig.qintpotlDB, encoding="UTF-8", nencoding="UTF-8")
+    cur = con.cursor()
+    cur1 = con.cursor()
+    material_list = [] 
+    cur1.execute("select distinct TO_CHAR(FCST_MONTH, 'YYYY/MM') from RQ_ADM.VIZIO_FCST_OUTPUT_2 order by TO_CHAR(FCST_MONTH, 'YYYY/MM')")
+    #c=0
+    for r1 in cur1 :
+        FCST_MONTH = r1[0]
+        cur.execute("select CONCAT('庫存-',material_item),sum(inventory)+sum(ON_WAY_QTY) from RQ_ADM.VIZIO_FCST_OUTPUT_2 where TO_CHAR(FCST_MONTH, 'YYYY/MM')= :FCST_MONTH "+whereStr+" group by material_item,FCST_MONTH order by FCST_MONTH,material_item",{'FCST_MONTH':FCST_MONTH})
+        tmp = {}
+        for r in cur :
+            tmp[r[0]] = r[1]
+        #tmp['fcst_month'] = FCST_MONTH
+        #material_list[c] = tmp 
+        #c=c+1
+        cur.execute("select CONCAT('預測-',material_item), sum(FCST_QTY) from RQ_ADM.VIZIO_FCST_OUTPUT_2 where TO_CHAR(FCST_MONTH, 'YYYY/MM')= :FCST_MONTH "+whereStr+" group by material_item,FCST_MONTH order by FCST_MONTH,material_item",{'FCST_MONTH':FCST_MONTH})
+        #tmp = {}
+        for r in cur :
+            tmp[r[0]] = r[1]
+        tmp['fcst_month'] = FCST_MONTH
+        material_list.append(tmp)  
+        #c=c+1 
+    data['material_list'] = material_list
+    cur.close()
+    cur1.close()
+    con.close()
+    return data
+
+@app.route('/gbim/set_material_api_2', methods=['GET'])
+#@login_required
+def set_material_api_2():
+    data = {}  
+    vizio_model_string = request.args.get("vizio_model")   
+    whereStr = " " 
+    if vizio_model_string == "'空值'" :
+        whereStr = whereStr + " and vizio_model is NULL "
+    elif '空值' in vizio_model_string :
+        whereStr = whereStr + " and (vizio_model in ("+vizio_model_string+") or vizio_model is NULL) " 
+    elif vizio_model_string != '' :
+        whereStr = whereStr + " and vizio_model in ("+vizio_model_string+")" 
+
+    con = cx_Oracle.connect(dbconfig.qintpotlDB, encoding="UTF-8", nencoding="UTF-8")
+    cur = con.cursor() 
+    material_item = []
+    inventory = []
+    fcst_qty = []
+    sqlstr = "select material_item, sum(inventory)+sum(ON_WAY_QTY)-sum(FCST_QTY),sum(FCST_QTY) from RQ_ADM.VIZIO_FCST_OUTPUT_2 where fcst_month=(select max(FCST_MONTH) from RQ_ADM.VIZIO_FCST_OUTPUT_2) "+whereStr+" group by material_item order by material_item"
+    cur.execute(sqlstr)
+    for r in cur : 
+        material_item.append(r[0])
+        inventory.append(r[1])
+        fcst_qty.append(r[2]) 
+    data['material_item'] = material_item
+    data['inventory'] = inventory
+    data['fcst_qty'] = fcst_qty
+    data['sqlstr'] = sqlstr
+    cur.close()
+    con.close()
+    return data
 
 @app.route('/gbim/set_material', methods=['GET'])
 @login_required
@@ -1126,6 +1321,42 @@ def set_material():
         "page_router":"整機-料件"
     }
     data['userChineseName'] = session['userChineseName']
+    con = cx_Oracle.connect(dbconfig.qintpotlDB, encoding="UTF-8", nencoding="UTF-8")
+    cur = con.cursor()
+    
+    fcst_month = []
+    cur.execute("select distinct TO_CHAR(fcst_month, 'YYYY/MM' ) fcst_month from RQ_ADM.VIZIO_FCST_OUTPUT_2 order by fcst_month asc")
+    for r in cur :
+        fcst_month.append(r[0])
+    fcst_month_search = sorted(fcst_month, reverse = True)
+    data['fcst_month_search'] = fcst_month_search
+    
+    set_material_list = {}
+    material_item_set = set()
+    vizio_model_set = set()
+    cur.execute("select TO_CHAR(fcst_month, 'YYYY/MM'),groupcode,material_item,NVL(fcst_qty,-9999),NVL(inventory,-9999),NVL(on_way_qty,-9999),NVL(alert_inventory,-9999),NVL(transfer_qty,-9999),NVL(vizio_model,'NA') from RQ_ADM.VIZIO_FCST_OUTPUT_2 order by TO_CHAR(fcst_month, 'YYYY/MM') ")
+    c = 0
+    for r in cur :
+        tmp = {}
+        tmp['fcst_month'] = r[0]
+        tmp['groupcode'] = r[1]
+        tmp['material_item'] = r[2]
+        material_item_set.add(tmp['material_item'])
+        tmp['fcst_qty'] = r[3] if int(r[3]) != -9999 else ''
+        tmp['inventory'] = r[4] if int(r[4]) != -9999 else ''
+        tmp['on_way_qty'] = r[5] if int(r[5]) != -9999 else ''
+        tmp['alert_inventory'] = r[6] if int(r[6]) != -9999 else ''
+        tmp['transfer_qty'] = r[7] if int(r[7]) != -9999 else ''
+        tmp['vizio_model'] = r[8] if r[8] != 'NA' else '空值'
+        #if tmp['vizio_model'] != '' :
+        vizio_model_set.add(tmp['vizio_model'])
+        set_material_list[str(c)] = tmp
+        c = c + 1
+    data['set_material_list'] = set_material_list
+    data['material_item_set'] = sorted(material_item_set)
+    data['vizio_model_set'] = sorted(vizio_model_set)
+    cur.close()
+    con.close()
     return render_template('set_material.html', data = data)
 ## 葉瑞賢 #################################################################################
 
@@ -1158,3 +1389,292 @@ def indexes():
     con.close()
     
     return render_template('indexes.html', data = data)
+
+#======== 維修效益 陳筱蓉
+@app.route('/gbim/mapping', methods=['GET','POST'])
+@login_required
+def mapping():
+    data = {
+        "title": "mapping table",
+        "formURL": "http://"+dbconfig.serverip+"/gbim/mapping",
+        "result": getMappingResult(),
+        "creationdate": getCreationdate(),
+        "page_router":"mapping table"
+    } 
+    if request.method == 'POST': 
+        print(request.files['MappingFile'])
+        MappingFile = request.files['MappingFile']
+        resultCount = parseExcelToMappingTable(MappingFile)
+        data['result'] = getMappingResult() #resultCount
+        data['creationdate'] = getCreationdate()
+    data['userChineseName'] = session['userChineseName']
+    return render_template('mapping.html', data = data)
+ 
+@app.route('/gbim/filter', methods=['GET','POST'])
+@login_required
+def filter():
+    data = {
+        "title": "維修效益物料使用差異",
+        "formURL": "http://"+dbconfig.serverip+":30083/gbim/filter",
+        "result": getFilterResult(),
+        #"creationdate": getCreationdate(),
+        "page_router":"維修效益物料使用差異"
+    } 
+    if request.method == 'POST': 
+        FilterFile = request.files['FilterFile']
+        resultCount = parseExcelToFilterTable(FilterFile)
+        data['result'] = getFilterResult()
+    data['userChineseName'] = session['userChineseName']
+    return render_template('filter.html', data = data)
+def getMappingResult() :
+    result = {'mapping_Defect_Type':[0,''],'mapping_Parts_Type':[0,''],'mapping_RC_ID':[0,''],'mapping_Size_Range':[0,''],'mapping_Defect_Group':[0,''],'mapping_Defect_no_Parts':[0,''],'mapping_Parts_Cost':[0,''],'mapping_RC_Cost_iEP_PR':[0,''],'mapping_Price_Normal':[0,''],'mapping_Price_DoS':[0,'']}    
+    conn = pymysql.connect(host=dbconfig.redb['host'], port=dbconfig.redb['port'],user=dbconfig.redb['user'], passwd=dbconfig.redb['passwd'], db=dbconfig.redb['db'])
+    cur = conn.cursor()
+    for r in result :
+        cur.execute("select count(1) from "+r)
+        result[r][0] = cur.fetchone()[0]
+        if result[r][0] > 0 :
+            cur.execute("select creationdate from "+r+" limit 1")
+            result[r][1] = cur.fetchone()[0]
+    return result
+def getCreationdate() :
+    conn = pymysql.connect(host=dbconfig.redb['host'], port=dbconfig.redb['port'],user=dbconfig.redb['user'], passwd=dbconfig.redb['passwd'], db=dbconfig.redb['db'])
+    cur = conn.cursor()
+    cur.execute("select creationdate from mapping_Defect_Type limit 1")   
+    creationdate = cur.fetchone()[0]
+    return creationdate
+
+def getMappingResult() :
+    result = {'mapping_Defect_Type':[0,''],'mapping_Parts_Type':[0,''],'mapping_RC_ID':[0,''],'mapping_Size_Range':[0,''],'mapping_Defect_Group':[0,''],'mapping_Defect_no_Parts':[0,''],'mapping_Parts_Cost':[0,''],'mapping_RC_Cost_iEP_PR':[0,''],'mapping_Price_Normal':[0,''],'mapping_Price_DoS':[0,'']}
+    conn = pymysql.connect(host=dbconfig.redb['host'], port=dbconfig.redb['port'],user=dbconfig.redb['user'], passwd=dbconfig.redb['passwd'], db=dbconfig.redb['db'])
+    cur = conn.cursor()
+    for r in result :
+        cur.execute("select count(1) from "+r)
+        result[r][0] = cur.fetchone()[0]
+        if result[r][0] > 0 :
+            cur.execute("select creationdate from "+r+" limit 1")
+            result[r][1] = cur.fetchone()[0]
+    return result
+
+def getFilterResult() :
+    con = cx_Oracle.connect(dbconfig.qintpotlDB, encoding="UTF-8", nencoding="UTF-8")
+    cur = con.cursor()
+    result = {}
+    cur.execute("select TO_CHAR(create_date, 'YYYY/MM/DD'),count(1) from id_adm.z_bogrm_repair_finish_yearly group by TO_CHAR(create_date, 'YYYY/MM/DD')")	
+    for r in cur :
+        result[r[0]] = r[1]
+    return result
+
+def parseExcelToFilterTable(FilterFile) :
+    con = cx_Oracle.connect(dbconfig.qintpotlDB, encoding="UTF-8", nencoding="UTF-8")
+    cur = con.cursor()
+    dt1 = datetime.utcnow().replace(tzinfo=timezone.utc)
+    creationdate = dt1.astimezone(timezone(timedelta(hours=8))).strftime('%Y/%m/%d %H:%M:%S')
+
+    data_xls = pd.read_excel(FilterFile, sheet_name='差異RawData', header = 0).fillna('')
+    resultCount = 0
+    for index,row in data_xls[['ORDER_NO','SERIAL_NO','SYMPTOM','PART_NO']].iterrows() :
+        ORDER_NO = row['ORDER_NO']
+        SERIAL_NO = row['SERIAL_NO']
+        SYMPTOM = row['SYMPTOM']
+        PART_NO = row['PART_NO']
+        print(index,' ',ORDER_NO,SERIAL_NO,SYMPTOM,PART_NO)		
+        
+        cur.execute("select count(1) from id_adm.z_bogrm_repair_finish_yearly where ORDER_NO=:ORDER_NO and SERIAL_NO=:SERIAL_NO and SYMPTOM=:SYMPTOM and PART_NO=:PART_NO",{'ORDER_NO':ORDER_NO,'SERIAL_NO':SERIAL_NO,'SYMPTOM':SYMPTOM,'PART_NO':PART_NO})
+        if cur.fetchone()[0] == 0:
+            resultCount = resultCount + 1
+            print(index,ORDER_NO,SERIAL_NO,SYMPTOM,PART_NO)
+            cur.execute("insert into id_adm.z_bogrm_repair_finish_yearly (ORDER_NO,SERIAL_NO,SYMPTOM,PART_NO,CREATE_DATE) values(:ORDER_NO,:SERIAL_NO,:SYMPTOM,:PART_NO,:CREATE_DATE)",{'ORDER_NO':ORDER_NO,'SERIAL_NO':SERIAL_NO,'SYMPTOM':SYMPTOM,'PART_NO':PART_NO,'CREATE_DATE':datetime.now()})
+            cur.execute("commit")
+    print('寫入',resultCount,'筆')
+    cur.execute("commit")
+    cur.close()
+    con.close()
+    return resultCount
+
+def parseExcelToMappingTable(MappingFile) :
+    resultCount = {'mapping_Defect_Type':0,'mapping_Parts_Type':0,'mapping_RC_ID':0,'mapping_Size_Range':0,'mapping_Defect_Group':0,'mapping_Defect_no_Parts':0,'mapping_Parts_Cost':0,'mapping_RC_Cost_iEP_PR':0,'mapping_Price_Normal':0,'mapping_Price_DoS':0}
+    conn = pymysql.connect(host=dbconfig.redb['host'], port=dbconfig.redb['port'],user=dbconfig.redb['user'], passwd=dbconfig.redb['passwd'], db=dbconfig.redb['db'])
+    cur = conn.cursor()
+    dt1 = datetime.utcnow().replace(tzinfo=timezone.utc)
+    creationdate = dt1.astimezone(timezone(timedelta(hours=8))).strftime('%Y/%m/%d %H:%M:%S')
+    
+    #MappingFile = 'Mapping Table to IDD.xlsx'
+    xls = pd.ExcelFile(MappingFile)
+    # sheet 3. RC Cost iEP PR 報價 ######################################################################################
+    data_xls = pd.read_excel(xls, sheet_name='RC Cost iEP PR 報價', header = 1).fillna('')
+    #data_xls = pd.read_excel(MappingFile, sheet_name='RC Cost iEP PR', header = 1).fillna('')
+    c = 0
+    sqlString = 'insert into re.mapping_RC_Cost_iEP_PR(NAME,USD,creationdate)values'
+    for index,row in data_xls[['NAME','USD']].iterrows():
+        if row['NAME'] != '':
+            sqlString = sqlString+"('"+row['NAME']+"','"+str(row['USD'])+"','"+creationdate+"'),"
+            c = c + 1
+    if c > 0 :
+        cur.execute("TRUNCATE re.mapping_RC_Cost_iEP_PR")
+        #cur.execute("ALTER TABLE re.mapping_RC_Cost_iEP_PR AUTO_INCREMENT = 1")
+        sqlString = sqlString[:-1]
+        resultCount['mapping_RC_Cost_iEP_PR'] = c
+        
+    print('3. RC Cost iEP PR 報價 ',c,'筆')      
+    cur.execute(sqlString)
+    cur.execute('commit')
+    # sheet 1. MAPPING ######################################################################################
+    data_xls = pd.read_excel(xls, sheet_name='MAPPING', header = 1).fillna('')
+
+    # 1.1 Defect Type
+    c = 0
+    sqlString = 'insert into re.mapping_Defect_Type(SYMPTOM,Defect_Type,creationdate)values'
+    for index,row in data_xls[['SYMPTOM','Defect Type']].iterrows() :
+        if row['SYMPTOM'] != '' :
+            sqlString = sqlString+"('"+row['SYMPTOM']+"','"+row['Defect Type']+"','"+creationdate+"'),"
+            c = c + 1
+    if c > 0 :
+        #cur.execute("delete from re.mapping_Defect_Type")
+        cur.execute("TRUNCATE re.mapping_Defect_Type") 
+        #cur.execute("ALTER TABLE re.mapping_Defect_Type AUTO_INCREMENT = 1")
+        sqlString = sqlString[:-1]
+        resultCount['mapping_Defect_Type'] = c
+
+    print('1.1 Defect Type ',c,'筆')
+    cur.execute(sqlString)
+    cur.execute('commit')
+    # 1.2 Parts Type
+    c = 0
+    sqlString = 'insert into re.mapping_Parts_Type(PART_NO,Parts_Type,creationdate)values'
+    for index,row in data_xls[['PART_NO','Parts Type']].iterrows():
+        if row['PART_NO'] != '':
+            sqlString = sqlString+"('"+str(row['PART_NO'])+"','"+row['Parts Type']+"','"+creationdate+"'),"
+            c = c + 1
+    if c > 0 :
+        cur.execute("TRUNCATE re.mapping_Parts_Type")
+        #cur.execute("ALTER TABLE re.mapping_Parts_Type AUTO_INCREMENT = 1")
+        sqlString = sqlString[:-1]
+        resultCount['mapping_Parts_Type'] = c
+        
+    print('1.2 Parts Type ',c,'筆')      
+    cur.execute(sqlString)
+    cur.execute('commit')
+    # 1.3 RC ID
+    c = 0
+    sqlString = 'insert into re.mapping_RC_ID(RC_ID,RCID,creationdate)values'
+    for index,row in data_xls[['RC_ID','RC ID']].iterrows():
+        if row['RC_ID'] != '':
+            sqlString = sqlString+"('"+row['RC_ID']+"','"+row['RC ID']+"','"+creationdate+"'),"
+            c = c + 1
+    if c > 0 :        
+        cur.execute("TRUNCATE re.mapping_RC_ID")
+        #cur.execute("ALTER TABLE re.mapping_RC_ID AUTO_INCREMENT = 1")
+        sqlString = sqlString[:-1]
+        resultCount['mapping_RC_ID'] = c
+    conn = pymysql.connect(host=dbconfig.redb['host'], port=dbconfig.redb['port'],user=dbconfig.redb['user'], passwd=dbconfig.redb['passwd'], db=dbconfig.redb['db'])
+    cur = conn.cursor()
+    print('1.3 RC ID ',c,'筆')
+    cur.execute(sqlString)
+    cur.execute('commit')
+    # 1.4 Size Range
+    c = 0
+    sqlString = 'insert into re.mapping_Size_Range(`from`,`to`,Size_range,creationdate)values'
+    for index,row in data_xls[['from','to','Size range']].iterrows():
+        if row['Size range'] != '':
+            sqlString = sqlString+"('"+str(row['from'])+"','"+str(row['to'])+"','"+row['Size range']+"','"+creationdate+"'),"
+            c = c + 1
+    if c > 0 :
+        cur.execute("TRUNCATE re.mapping_Size_Range")
+        #cur.execute("ALTER TABLE re.mapping_Size_Range AUTO_INCREMENT = 1")
+        sqlString = sqlString[:-1]
+        resultCount['mapping_Size_Range'] = c
+        
+    print('1.4 Size Range ',c,'筆')   
+    cur.execute(sqlString)
+    cur.execute('commit')
+    conn = pymysql.connect(host=dbconfig.redb['host'], port=dbconfig.redb['port'],user=dbconfig.redb['user'], passwd=dbconfig.redb['passwd'], db=dbconfig.redb['db'])
+    cur = conn.cursor()
+    # 1.5 Defect Group
+    c = 0
+    sqlString = 'insert into re.mapping_Defect_Group(`group`,Defect_Group,creationdate)values'
+    for index,row in data_xls[['組合','Defect Group']].iterrows():
+        if row['組合'] != '':
+            sqlString = sqlString+"('"+row['組合']+"','"+row['Defect Group']+"','"+creationdate+"'),"
+            c = c + 1
+    if c > 0 :
+        cur.execute("TRUNCATE re.mapping_Defect_Group")
+        #cur.execute("ALTER TABLE re.mapping_Defect_Group AUTO_INCREMENT = 1")
+        sqlString = sqlString[:-1]
+        resultCount['mapping_Defect_Group'] = c
+        
+    print('1.5 Defect Group ',c,'筆')
+    cur.execute(sqlString)
+    cur.execute('commit')
+    # 1.6 Defect 不會用到的 Parts 
+    c = 0
+    sqlString = 'insert into re.mapping_Defect_no_Parts(Defect_Type,PART_NO,Parts_Type,creationdate)values'
+    for index,row in data_xls[['Defect Type.1','PART_NO.1','Parts Type.1']].iterrows():
+        if row['Defect Type.1'] != '':
+            sqlString = sqlString+"('"+row['Defect Type.1']+"','"+str(row['PART_NO.1'])+"','"+row['Parts Type.1']+"','"+creationdate+"'),"
+            c = c + 1
+    if c > 0 :
+        cur.execute("TRUNCATE re.mapping_Defect_no_Parts")
+        #cur.execute("ALTER TABLE re.mapping_Defect_no_Parts AUTO_INCREMENT = 1")
+        sqlString = sqlString[:-1]
+        resultCount['mapping_Defect_no_Parts'] = c
+        
+    print('1.6 Defect 不會用到的 Parts ',c,'筆')
+    cur.execute(sqlString)
+    cur.execute('commit')
+    # sheet 2. Parts Cost ######################################################################################
+    """
+    data_xls = pd.read_excel(MappingFile, sheet_name='Parts Cost', header = 1).fillna('')
+    c = 0
+    sqlString = 'insert into re.mapping_Parts_Cost(ITEM_ID,USD,creationdate)values'
+    for index,row in data_xls[['ITEM_ID','USD']].iterrows():
+        if row['ITEM_ID'] != '':
+            sqlString = sqlString+"('"+row['ITEM_ID']+"','"+str(row['USD'])+"','"+creationdate+"'),"
+            c = c + 1
+    if c > 0 :
+        cur.execute("delete from re.mapping_Parts_Cost")
+        cur.execute("ALTER TABLE re.mapping_Parts_Cost AUTO_INCREMENT = 1")
+        sqlString = sqlString[:-1]
+        resultCount['mapping_Parts_Cost'] = c
+        
+    print('2. Parts Cost ',c,'筆') 
+    cur.execute(sqlString)
+    """
+    
+    # sheet 4. Price ######################################################################################
+    data_xls = pd.read_excel(xls, sheet_name='Price', header = 1).fillna('')
+    # 4.1 mapping_Price_Normal
+    c = 0
+    sqlString = 'insert into re.mapping_Price_Normal(Model_Name,MID7,MID4,Prod_ID,Cust_Group,Normal,creationdate)values'
+    for index,row in data_xls[['Model Name','MID 7','MID 4','Prod ID','Cust Group','Normal']].iterrows():
+        if row['Normal'] != '':
+            sqlString = sqlString+"('"+row['Model Name']+"','"+row['MID 7']+"','"+row['MID 4']+"','"+row['Prod ID']+"','"+row['Cust Group']+"','"+str(row['Normal'])+"','"+creationdate+"'),"
+            c = c + 1
+    if c > 0 :
+        cur.execute("TRUNCATE re.mapping_Price_Normal")
+        #cur.execute("ALTER TABLE re.mapping_Price_Normal AUTO_INCREMENT = 1")
+        sqlString = sqlString[:-1]
+        resultCount['mapping_Price_Normal'] = c
+        
+    print('4.1 mapping_Price_Normal ',c,'筆')    
+    cur.execute(sqlString)
+    cur.execute('commit')
+    # 4.2 mapping_Price_DoS
+    c = 0
+    sqlString = 'insert into re.mapping_Price_DoS(Model_Name,MID7,MID4,Prod_ID,Cust_Group,DoS,creationdate)values'
+    for index,row in data_xls[['Model Name.1','MID 7.1','MID 4.1','Prod ID.1','Cust Group.1','DoS']].iterrows():
+        if row['DoS'] != '':
+            sqlString = sqlString+"('"+row['Model Name.1']+"','"+row['MID 7.1']+"','"+row['MID 4.1']+"','"+row['Prod ID.1']+"','"+row['Cust Group.1']+"','"+str(row['DoS'])+"','"+creationdate+"'),"
+            c = c + 1
+    if c > 0 :        
+        cur.execute("TRUNCATE re.mapping_Price_DoS")
+        #cur.execute("ALTER TABLE re.mapping_Price_DoS AUTO_INCREMENT = 1")
+        sqlString = sqlString[:-1]
+        resultCount['mapping_Price_DoS'] = c
+        
+    print('4.2 mapping_Price_DoS ',c,'筆')    
+    cur.execute(sqlString)
+    cur.execute('commit')
+    cur.close()
+    conn.close()
+    return resultCount
