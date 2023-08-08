@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}SMART FR{% endblock %}
+{% block title %}RQM庫存預測平台{% endblock %}
 {% block content %}
 <style>
 html, body, #main {
@@ -97,19 +97,22 @@ bottom: .5em;
   </div>
 
 <script type="text/javascript">
-var ajaxUrlPort = '10.55.14.209:30083/gbim/' 
+//var ajaxUrlPort = '10.55.14.209:30083/gbim/'
+//var ajaxUrlPort = '127.0.0.1:83/gbim/'
+var ajaxUrlPort = '10.53.200.183:35170/gbim/'
 function filter(){ 
 	filter_dict = [];
 	FCST_MONTH = $("#FCST_MONTH").val().trim()
-	//alert($("#FCST_MONTH").val().trim())
+	MOTHER_MODEL_NAME = $("#MOTHER_MODEL_NAME").val().trim()
+	PHASE = $("#PHASE").val().trim()
 	if(FCST_MONTH != ''){
 		filter_dict.push({key:"FCST_MONTH",value:FCST_MONTH})
 	} 
-	if($("#MOTHER_MODEL_NAME").val().trim() != ''){
-		filter_dict.push({key:"MOTHER_MODEL_NAME",value:$("#MOTHER_MODEL_NAME").val().trim()})
+	if(MOTHER_MODEL_NAME != ''){
+		filter_dict.push({key:"MOTHER_MODEL_NAME",value:MOTHER_MODEL_NAME})
 	}
-	if($("#PHASE").val().trim() != ''){
-		filter_dict.push({key:"PHASE",value:$("#PHASE").val().trim()})
+	if(PHASE != ''){
+		filter_dict.push({key:"PHASE",value:PHASE})
 	}
 	tmp = [];
 	for(i in fcst_output_checkup_list){
@@ -126,7 +129,9 @@ function filter(){
 		}
 	}
 	console.log(tmp)
-	
+	if(tmp.length > 0){
+		set_audit_api(MOTHER_MODEL_NAME, PHASE)
+	}
 	var table = $('#set_audit').DataTable();
 	table.clear().draw();
 	table.destroy();
@@ -171,6 +176,31 @@ function download(){
 	$('body').append(form);
 	form.submit(); 
 }
+
+function set_audit_api(MOTHER_MODEL_NAME, PHASE){ 
+	//alert('MOTHER_MODEL_NAME:'+MOTHER_MODEL_NAME+', PHASE:'+PHASE)
+	$.ajax({
+		url: "http://"+ajaxUrlPort+"set_audit_api",
+		type: "GET",
+		dataType: 'json',
+		data:{ MOTHER_MODEL_NAME:MOTHER_MODEL_NAME, PHASE:PHASE},
+		contentType: "application/json; charset=utf-8",
+		success: function (data) {
+			console.log('set_audit_api:')
+			console.log(data)
+			fcst_month = data['fcst_month']
+			COMSUMPTION = data['COMSUMPTION']
+			FCST_QTY = data['FCST_QTY']
+			upper_bound = data['upper_bound']
+			lower_bound = data['lower_bound']
+			Echarts()
+		},
+		error: function(xhr) {
+		  alert('set_audit_api 發生錯誤:'+JSON.stringify(xhr)); 
+		}
+	});	
+}
+
 $(document).ready(function() {  
   $(".search_keyword").change(function(){
     filter();
@@ -187,139 +217,123 @@ var fcst_output_checkup_list = JSON.parse(decodeHtml("{{data['fcst_output_checku
 var fcst_month = JSON.parse(decodeHtml("{{data['fcst_month']}}").replace(/'/g, '"'))
 console.log('fcst_month:')
 console.log(fcst_month)
-var FCST_QTY = JSON.parse(decodeHtml("{{data['FCST_QTY']}}").replace(/'/g, '"'))
-console.log('FCST_QTY:')
-console.log(FCST_QTY)
 
-Over_Line = FCST_QTY.map(item=>Math.round(item*1.1,2)) 
-console.log('Over_Line:')
-console.log(Over_Line)
-Under_Line = FCST_QTY.map(item=>item-item*0.05)
-console.log('Under_Line:')
-console.log(Under_Line)
 
-var COMSUMPTION = JSON.parse(decodeHtml("{{data['COMSUMPTION']}}").replace(/'/g, '"'))
-var upper_bound = JSON.parse(decodeHtml("{{data['upper_bound']}}").replace(/'/g, '"'))
-var lower_bound = JSON.parse(decodeHtml("{{data['lower_bound']}}").replace(/'/g, '"'))
-console.log('COMSUMPTION:')
-console.log(COMSUMPTION)
+
 //2021May~2022Apr
 //VIZIO_SELL_THRU = [2167,10090,16528,10247,10548,18888,47111,26737,23291,25941,30593,25219]
 //2021Dec~2022Apr
 VIZIO_SELL_THRU = [26737,23291,25941,30593,25219]
 //var legendColor = ['#FFA500','#4169E1','#6B8E23','#800000','#000000']
 var legendColor = ['#4169E1','#6B8E23','#800000','#000000']
-
-require(['echarts'], function (echarts) {
-var chart = echarts.init(document.getElementById('chartdiv'));
- 
-chart.setOption( option = {
-  title: {
-    //text: 'Stacked Area Chart'
-  },
-  tooltip: {
-    trigger: 'axis',
-    axisPointer: {
-      type: 'cross',
-      label: {
-        backgroundColor: '#6a7985'
-      }
-    }
-  },
-  legend: {
-    //data: ['Email', 'Union Ads', 'Video Ads', 'Direct', 'Search Engine']
-  },
-  color: legendColor,
-  toolbox: {
-    feature: {
-      saveAsImage: {}
-    }
-  },
-  grid: {
-    left: '3%',
-    right: '4%',
-    bottom: '3%',
-    containLabel: true
-  },
-  xAxis: [
-    {
-      type: 'category',
-      boundaryGap: false,
-      data: fcst_month//['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    }
-  ],
-  yAxis: [
-    {
-	  name: '數量(台)',
-      type: 'value'
-    }/*,
-	{
-	  name: 'Sell through',
-	  type: 'value'
-	}*/
-  ],
-  series: [
-  /*
-    {
-      name: 'Sell through',
-      type: 'line',
-      //stack: 'Total',
-	  //label: {show: true},
-	  yAxisIndex: 1,
-      data: VIZIO_SELL_THRU 
-    },*/    
-    {
-      name: '預估需求量(overall)',
-      type: 'line',
-      //stack: 'Total',
-	  //label: {show: true},
-      data: FCST_QTY 
-    },
-    
-    {
-      name: 'Under Line',
-      type: 'line',
-	  //label: {show: true},
-      //stack: 'Total',
-	  lineStyle: {
-        width: 2,
-        type: 'dashed'
-      },
-      data: lower_bound//Under_Line//FCST_QTY.map(item=>item*0.95) 
-    },
-	{
-      name: 'Over Line',
-      type: 'line',
-	  lineStyle: {
-        width: 2,
-        type: 'dashed'
-      },
+function Echarts(){
+	require(['echarts'], function (echarts) {
+	var chart = echarts.init(document.getElementById('chartdiv'));	 
+	chart.setOption( option = {
+	  title: {
+		//text: 'Stacked Area Chart'
+	  },
+	  tooltip: {
+		trigger: 'axis',
+		axisPointer: {
+		  type: 'cross',
+		  label: {
+			backgroundColor: '#6a7985'
+		  }
+		}
+	  },
+	  legend: {
+		//data: ['Email', 'Union Ads', 'Video Ads', 'Direct', 'Search Engine']
+	  },
+	  color: legendColor,
+	  toolbox: {
+		feature: {
+		  saveAsImage: {}
+		}
+	  },
+	  grid: {
+		left: '3%',
+		right: '4%',
+		bottom: '3%',
+		containLabel: true
+	  },
+	  xAxis: [
+		{
+		  type: 'category',
+		  boundaryGap: false,
+		  data: fcst_month//['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+		}
+	  ],
+	  yAxis: [
+		{
+		  name: '數量(台)',
+		  type: 'value'
+		}/*,
+		{
+		  name: 'Sell through',
+		  type: 'value'
+		}*/
+	  ],
+	  series: [
 	  /*
-	  label: {				 
-				normal : {
-					//show: true,								 
-					formatter:function(a) {value = a.value+10000;  return value;
+		{
+		  name: 'Sell through',
+		  type: 'line',
+		  //stack: 'Total',
+		  //label: {show: true},
+		  yAxisIndex: 1,
+		  data: VIZIO_SELL_THRU 
+		},*/    
+		{
+		  name: '預估需求量(overall)',
+		  type: 'line',
+		  //stack: 'Total',
+		  //label: {show: true},
+		  data: FCST_QTY 
+		},
+		
+		{
+		  name: 'Under Line',
+		  type: 'line',
+		  //label: {show: true},
+		  //stack: 'Total',
+		  lineStyle: {
+			width: 2,
+			type: 'dashed'
+		  },
+		  data: lower_bound//Under_Line//FCST_QTY.map(item=>item*0.95) 
+		},
+		{
+		  name: 'Over Line',
+		  type: 'line',
+		  lineStyle: {
+			width: 2,
+			type: 'dashed'
+		  },
+		  /*
+		  label: {				 
+					normal : {
+						//show: true,								 
+						formatter:function(a) {value = a.value+10000;  return value;
+						}
 					}
-				}
-			  },*/
-			  
-      //stack: 'Total',
-      //areaStyle: {}, 
-      data: upper_bound//Over_Line//FCST_QTY.map(item=>item*1.05) 
-	  
-    },
-    {
-      name: '實際耗用',
-      type: 'line',
-	  //label: {show: true},
-      //stack: 'Total',
-      data: COMSUMPTION 
-    } 
-  ]
-});
- 
-
-})
-
+				  },*/
+				  
+		  //stack: 'Total',
+		  //areaStyle: {}, 
+		  data: upper_bound//Over_Line//FCST_QTY.map(item=>item*1.05) 
+		  
+		},
+		{
+		  name: '實際耗用',
+		  type: 'line',
+		  //label: {show: true},
+		  //stack: 'Total',
+		  data: COMSUMPTION 
+		} 
+	  ]
+	});
+  })
+}
 </script>  
 {% endblock %}
